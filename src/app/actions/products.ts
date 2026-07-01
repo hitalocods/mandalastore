@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isAdminAuthenticated } from "@/lib/auth";
-import { categories, type ProductCategory } from "@/types/product";
+import { categories } from "@/types/product";
 import { uploadImageToBlob } from "@/lib/blob";
 import { sql } from "@/lib/db";
 
@@ -20,12 +20,12 @@ function getNumber(formData: FormData, key: string) {
   return Number(raw);
 }
 
-function getCategory(formData: FormData): ProductCategory {
+function getCategory(formData: FormData): string {
   const category = String(formData.get("category") || "");
-  if (!categories.includes(category as ProductCategory)) {
-    return "Capas";
+  if (!categories.includes(category as any)) {
+    return "Acessórios";
   }
-  return category as ProductCategory;
+  return category;
 }
 
 async function uploadImage(file: File | null) {
