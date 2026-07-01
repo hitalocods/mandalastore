@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Product, ProductCategory } from "@/types/product";
+import type { Product } from "@/types/product";
 
 export function useProductFilter(products: Product[]) {
   const [activeCategory, setActiveCategory] = useState<string>("Todos");

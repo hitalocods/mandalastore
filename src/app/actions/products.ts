@@ -22,7 +22,7 @@ function getNumber(formData: FormData, key: string) {
 
 function getCategory(formData: FormData): string {
   const category = String(formData.get("category") || "");
-  if (!categories.includes(category as any)) {
+  if (!categories.includes(category as typeof categories[number])) {
     return "Acessórios";
   }
   return category;
