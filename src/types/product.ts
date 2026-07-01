@@ -1,13 +1,11 @@
 export const categories = ["Cachimbos", "Charutos", "Fumos", "Cigarros", "Vestuário", "Baralhos", "Acessórios"] as const;
 
-export type ProductCategory = (typeof categories)[number];
-
 export type Product = {
   id: string;
   name: string;
   description: string | null;
   price: number;
-  category: ProductCategory;
+  category: string;
   stock: number;
   image_url: string | null;
   created_at: string;
