@@ -1,0 +1,13 @@
+[
+  {
+    "id": "cachimbo-01",
+    "name": "Cachimbo Longo 30cm",
+    "description": "Cachimbo modelo longo 30cm",
+    "price": 259.9,
+    "category": "Cachimbos",
+    "stock": 1,
+    "image_url": "/produtos_mandala_prime/cachimbos/cachimbo_01.jpg",
+    "is_premium": true,
+    "is_available": true
+  }
+]

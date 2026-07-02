@@ -8,6 +8,8 @@ export type Product = {
   category: string;
   stock: number;
   image_url: string | null;
+  is_premium?: boolean;
+  is_available?: boolean;
   created_at: string;
 };
 
