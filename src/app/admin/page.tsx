@@ -36,7 +36,7 @@ export default async function AdminPage() {
         </div>
       </header>
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[360px_1fr] lg:px-8">
-        <aside className="h-fit rounded-lg border bg-white p-5 shadow-sm lg:sticky lg:top-24">
+        <aside className="h-fit rounded-lg border bg-white p-5 shadow-sm lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100vh-7rem)] lg:flex-col lg:overflow-hidden">
           <div className="mb-6">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Dashboard</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">Admin STORE</h1>

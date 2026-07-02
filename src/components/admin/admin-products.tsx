@@ -1,19 +1,64 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { deleteProduct } from "@/app/actions/products";
 import { ProductForm } from "@/components/admin/product-form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { formatCurrency } from "@/lib/utils";
-import type { Product } from "@/types/product";
+import { categories, type Product } from "@/types/product";
 
 export function AdminProducts({ products }: { products: Product[] }) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<string>("Todos");
+
+  const filteredProducts = useMemo(() => {
+    const search = query.trim().toLowerCase();
+
+    return products.filter((product) => {
+      const matchesCategory = category === "Todos" || product.category === category;
+      const matchesQuery = !search || product.name.toLowerCase().includes(search);
+
+      return matchesCategory && matchesQuery;
+    });
+  }, [category, products, query]);
+
   return (
     <div className="grid gap-4">
-      {products.map((product, index) => (
+      <div className="grid gap-3 rounded-lg border bg-card p-4 shadow-sm sm:grid-cols-[1.2fr_220px]">
+        <div className="grid gap-2">
+          <Label htmlFor="admin-product-search">Buscar por nome</Label>
+          <Input
+            id="admin-product-search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Digite o nome do produto"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label>Categoria</Label>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todos">Todos</SelectItem>
+              {categories.map((item) => (
+                <SelectItem value={item} key={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {filteredProducts.map((product, index) => (
         <motion.div
           key={product.id}
           initial={{ opacity: 0, y: 10 }}
@@ -60,9 +105,9 @@ export function AdminProducts({ products }: { products: Product[] }) {
           </div>
         </motion.div>
       ))}
-      {!products.length && (
+      {!filteredProducts.length && (
         <div className="rounded-lg border bg-card p-10 text-center text-sm text-muted-foreground">
-          Nenhum produto cadastrado.
+          Nenhum produto encontrado.
         </div>
       )}
       <Separator />
