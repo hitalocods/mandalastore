@@ -15,7 +15,7 @@ export function SiteHeader({ onCartOpen }: SiteHeaderProps) {
   const { count } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const links = ["Produtos", "Categorias", "Admin"];
+  const links = ["Produtos", "Categorias"];
 
   return (
     <header className="sticky top-0 z-40 border-b bg-white/78 backdrop-blur-xl">
@@ -29,9 +29,6 @@ export function SiteHeader({ onCartOpen }: SiteHeaderProps) {
           </a>
           <a href="#categories" className="bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text transition text-transparent">
             Categorias
-          </a>
-          <a href="/admin/login" className="bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text transition text-transparent">
-            Admin
           </a>
         </nav>
         <div className="flex items-center gap-0.5 sm:gap-1">
