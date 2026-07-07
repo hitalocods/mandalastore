@@ -3,8 +3,11 @@ import Link from "next/link";
 import { signOutAdmin } from "@/app/actions/auth";
 import { ProductForm } from "@/components/admin/product-form";
 import { AdminProducts } from "@/components/admin/admin-products";
+import { NeighborhoodForm } from "@/components/admin/neighborhood-form";
+import { AdminNeighborhoods } from "@/components/admin/admin-neighborhoods";
 import { Button } from "@/components/ui/button";
 import { getProducts } from "@/services/products";
+import { getNeighborhoods } from "@/services/neighborhoods";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { formatCurrency } from "@/lib/utils";
 
@@ -18,6 +21,7 @@ export default async function AdminPage() {
   }
 
   const products = await getProducts();
+  const neighborhoods = await getNeighborhoods();
   const inventory = products.reduce((sum, product) => sum + product.stock, 0);
   const catalogValue = products.reduce((sum, product) => sum + product.price * product.stock, 0);
 
@@ -57,14 +61,28 @@ export default async function AdminPage() {
           </div>
           <ProductForm />
         </aside>
-        <section className="space-y-4">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Produtos</p>
-              <h2 className="mt-1 text-xl font-semibold">Catalogo cadastrado</h2>
+        <section className="space-y-8">
+          <div className="space-y-4">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Produtos</p>
+                <h2 className="mt-1 text-xl font-semibold">Catalogo cadastrado</h2>
+              </div>
             </div>
+            <AdminProducts products={products} />
           </div>
-          <AdminProducts products={products} />
+          <div className="space-y-4">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Bairros</p>
+                <h2 className="mt-1 text-xl font-semibold">Gerenciamento de Bairros</h2>
+              </div>
+            </div>
+            <div className="rounded-lg border bg-white p-5 shadow-sm">
+              <NeighborhoodForm />
+            </div>
+            <AdminNeighborhoods neighborhoods={neighborhoods} />
+          </div>
         </section>
       </div>
     </main>

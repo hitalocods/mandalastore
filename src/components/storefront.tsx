@@ -21,10 +21,11 @@ import { CartProvider } from "@/store/cart-store";
 import { categories } from "@/types/product";
 
 import type { Product } from "@/types/product";
+import type { Neighborhood } from "@/types/neighborhood";
 
 
 
-export function Storefront({ products }: { products: Product[] }) {
+export function Storefront({ products, neighborhoods }: { products: Product[]; neighborhoods: Neighborhood[] }) {
 
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -44,7 +45,7 @@ export function Storefront({ products }: { products: Product[] }) {
 
           <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
 
-            <p className="mb-3 bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-[11px] uppercase tracking-[0.22em] text-transparent sm:mb-4 sm:text-xs">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-black sm:mb-4 sm:text-xs">
 
               Acessorios premium
 
@@ -56,7 +57,7 @@ export function Storefront({ products }: { products: Product[] }) {
 
             </h1>
 
-            <p className="mt-4 max-w-md bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-sm leading-6 text-transparent sm:mt-5 sm:text-base sm:leading-7">
+            <p className="mt-4 max-w-md text-sm leading-6 text-black sm:mt-5 sm:text-base sm:leading-7">
 
               Capas, Acessorios, Roupas e muito mais.
 
@@ -116,7 +117,7 @@ export function Storefront({ products }: { products: Product[] }) {
 
                     ? "bg-primary text-primary-foreground"
 
-                    : "bg-white bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-transparent hover:border-foreground"
+                    : "bg-white text-black hover:border-foreground"
 
                 }`}
 
@@ -140,13 +141,13 @@ export function Storefront({ products }: { products: Product[] }) {
 
             <div>
 
-              <p className="bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-[11px] uppercase tracking-[0.2em] text-transparent sm:text-xs">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-black sm:text-xs">
 
                 {filteredProducts.length} itens
 
               </p>
 
-              <h2 className="mt-1 bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-xl font-semibold tracking-tight text-transparent sm:mt-2 sm:text-2xl">Produtos</h2>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight text-black sm:mt-2 sm:text-2xl">Produtos</h2>
 
             </div>
 
@@ -170,7 +171,7 @@ export function Storefront({ products }: { products: Product[] }) {
 
       </main>
 
-      <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
+      <CartDrawer open={cartOpen} onOpenChange={setCartOpen} neighborhoods={neighborhoods} />
 
     </CartProvider>
 

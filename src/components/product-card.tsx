@@ -10,7 +10,6 @@ import type { Product } from "@/types/product";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
-  const installments = product.price / 3;
 
   return (
     <motion.article
@@ -37,20 +36,19 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
       <div className="space-y-3 p-3 sm:space-y-4 sm:p-5">
         <div className="space-y-1">
-          <p className="truncate bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-[9px] uppercase tracking-[0.14em] text-transparent sm:text-[11px] sm:tracking-[0.18em]">
+          <p className="truncate text-[9px] uppercase tracking-[0.14em] text-black sm:text-[11px] sm:tracking-[0.18em]">
             {product.category}
           </p>
-          <h3 className="line-clamp-2 min-h-9 bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-sm font-medium leading-[1.15] tracking-tight text-transparent sm:line-clamp-1 sm:min-h-0 sm:text-base">
+          <h3 className="line-clamp-2 min-h-9 text-sm font-medium leading-[1.15] tracking-tight text-black sm:line-clamp-1 sm:min-h-0 sm:text-base">
             {product.name}
           </h3>
-          <p className="hidden line-clamp-2 min-h-10 bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-sm leading-5 text-transparent sm:block">
+          <p className="hidden line-clamp-2 min-h-10 text-sm leading-5 text-black sm:block">
             {product.description || "Selecao premium STORE."}
           </p>
         </div>
         <div className="grid gap-3 sm:flex sm:items-end sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <p className="truncate bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-[15px] font-semibold tracking-tight text-transparent sm:text-lg">{formatCurrency(product.price)}</p>
-            <p className="hidden bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-xs text-transparent sm:block">3x de {formatCurrency(installments)}</p>
+            <p className="truncate text-[15px] font-semibold tracking-tight text-black sm:text-lg">{formatCurrency(product.price)}</p>
           </div>
           <Button
             size="sm"

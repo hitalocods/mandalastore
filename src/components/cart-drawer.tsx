@@ -1,39 +1,108 @@
 "use client";
 
-import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Minus, Plus, ShoppingBag, Trash2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatCurrency } from "@/lib/utils";
 import { useCart } from "@/store/cart-store";
+import { CheckoutForm } from "@/components/checkout-form";
+import type { CheckoutData } from "@/types/checkout";
+import type { Neighborhood } from "@/types/neighborhood";
 
 type CartDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  neighborhoods: Neighborhood[];
 };
 
-export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
-  const { items, subtotal, removeItem, setQuantity } = useCart();
+export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProps) {
+  const { items, subtotal, removeItem, setQuantity, clearCart } = useCart();
+  const [showCheckout, setShowCheckout] = useState(false);
 
-  const finishOrder = () => {
-    const lines = items.map((item) => `- ${item.product.name} x${item.quantity}`).join("%0A");
-    const message = `Ola, gostaria de fazer este pedido:%0A%0A${lines}%0A%0ATotal: ${formatCurrency(subtotal)}`;
-    const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "";
+  const handleStartCheckout = () => {
+    setShowCheckout(true);
+  };
+
+  const handleBackToCart = () => {
+    setShowCheckout(false);
+  };
+
+  const formatWhatsAppMessage = (data: CheckoutData, deliveryFee: number) => {
+    const total = subtotal + deliveryFee;
+    const deliveryTypeText = data.deliveryType === "pickup" ? "Retirada" : "Entrega";
+    const paymentMethodText = {
+      money: "Dinheiro",
+      pix: "Pix",
+      debit: "Cartão de Débito",
+      credit: "Cartão de Crédito",
+    }[data.paymentMethod];
+
+    let message = `🛒 NOVO PEDIDO\n\n--------------------------------\n\nTipo:\n${deliveryTypeText}\n\n--------------------------------\n\nCliente\n\nNome:\n${data.fullName}\n\nWhatsApp:\n${data.whatsapp}\n\n--------------------------------\n\nItens\n\n`;
+
+    items.forEach((item) => {
+      message += `${item.quantity}x ${item.product.name}\n`;
+    });
+
+    message += `\n--------------------------------\n\nSubtotal\n\n${formatCurrency(subtotal)}\n\n`;
+
+    if (deliveryFee > 0) {
+      message += `Taxa de entrega\n\n${formatCurrency(deliveryFee)}\n\n`;
+    }
+
+    message += `Total\n\n${formatCurrency(total)}\n\n--------------------------------\n\nPagamento\n\n${paymentMethodText}\n\n`;
+
+    if (data.paymentMethod === "credit" && data.installments) {
+      message += `${data.installments}x\n\n`;
+    }
+
+    if (data.paymentMethod === "money" && data.needsChange && data.changeFor) {
+      message += `Troco para R$${formatCurrency(data.changeFor)}\n\n`;
+    }
+
+    if (data.deliveryType === "delivery") {
+      const neighborhood = neighborhoods.find((n: Neighborhood) => n.id === data.neighborhoodId);
+      message += `--------------------------------\n\nSe entrega:\n\nBairro:\n${neighborhood?.name || ""}\n\nEndereço:\n${data.address}\n\nNúmero:\n${data.number}\n\nComplemento:\n${data.complement || ""}\n\nReferência:\n${data.reference || ""}\n\nEntrega:\n${data.deliveryOption === "mototaxi" ? "Moto Táxi" : "Entrega da Loja"}\n\n`;
+    }
+
+    message += `--------------------------------\n\nPedido realizado pelo site.`;
+
+    return encodeURIComponent(message);
+  };
+
+  const finishOrder = (data: CheckoutData, deliveryFee: number) => {
+    const message = formatWhatsAppMessage(data, deliveryFee);
+    const phone = "5586988269144";
     window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener,noreferrer");
+    clearCart();
+    setShowCheckout(false);
+    onOpenChange(false);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col">
         <SheetHeader>
-          <SheetTitle className="bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-transparent">Carrinho</SheetTitle>
+          <SheetTitle className="text-black">
+            {showCheckout ? (
+              <button onClick={handleBackToCart} className="flex items-center gap-2 text-sm">
+                <ArrowLeft className="h-4 w-4" />
+                Voltar ao Carrinho
+              </button>
+            ) : (
+              "Carrinho"
+            )}
+          </SheetTitle>
         </SheetHeader>
         <div className="premium-scrollbar flex-1 overflow-y-auto px-4 sm:px-6">
-          {items.length === 0 ? (
+          {showCheckout ? (
+            <CheckoutForm neighborhoods={neighborhoods} subtotal={subtotal} onFinish={finishOrder} />
+          ) : items.length === 0 ? (
             <div className="flex h-full min-h-80 flex-col items-center justify-center gap-3 text-center">
               <div className="rounded-full border p-4">
                 <ShoppingBag className="h-5 w-5" />
               </div>
-              <p className="bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-sm text-transparent">Seu carrinho esta vazio.</p>
+              <p className="text-sm text-black">Seu carrinho esta vazio.</p>
             </div>
           ) : (
             <div className="space-y-4 pb-6 sm:space-y-5">
@@ -47,8 +116,8 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-sm font-medium text-transparent">{item.product.name}</p>
-                        <p className="bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-xs text-transparent">{formatCurrency(item.product.price)}</p>
+                        <p className="truncate text-sm font-medium text-black">{item.product.name}</p>
+                        <p className="text-xs text-black">{formatCurrency(item.product.price)}</p>
                       </div>
                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeItem(item.product.id)}>
                         <Trash2 className="h-4 w-4" />
@@ -79,15 +148,17 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
             </div>
           )}
         </div>
-        <div className="border-t p-4 sm:p-6">
-          <div className="mb-4 flex items-center justify-between text-sm">
-            <span className="bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-transparent">Subtotal</span>
-            <strong className="bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-lg text-transparent">{formatCurrency(subtotal)}</strong>
+        {!showCheckout && (
+          <div className="border-t p-4 sm:p-6">
+            <div className="mb-4 flex items-center justify-between text-sm">
+              <span className="text-black">Subtotal</span>
+              <strong className="text-lg text-black">{formatCurrency(subtotal)}</strong>
+            </div>
+            <Button className="h-12 w-full rounded-full" disabled={!items.length} onClick={handleStartCheckout}>
+              Finalizar Pedido
+            </Button>
           </div>
-          <Button className="h-12 w-full rounded-full" disabled={!items.length} onClick={finishOrder}>
-            Finalizar no WhatsApp
-          </Button>
-        </div>
+        )}
       </SheetContent>
     </Sheet>
   );
