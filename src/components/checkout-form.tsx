@@ -101,18 +101,7 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
         <>
           <div className="space-y-3">
             <Label htmlFor="neighborhood">Bairro</Label>
-            <Select value={neighborhoodId} onValueChange={setNeighborhoodId} required>
-              <SelectTrigger id="neighborhood">
-                <SelectValue placeholder="Selecione o bairro" />
-              </SelectTrigger>
-              <SelectContent>
-                {neighborhoods.map((neighborhood) => (
-                  <SelectItem key={neighborhood.id} value={neighborhood.id}>
-                    {neighborhood.name} - {formatCurrency(neighborhood.delivery_fee)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input id="neighborhood" value={neighborhoodId} onChange={(e) => setNeighborhoodId(e.target.value)} placeholder="Digite o nome do bairro" required />
           </div>
 
           <div className="space-y-3">

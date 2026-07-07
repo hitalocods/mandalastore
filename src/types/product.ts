@@ -1,4 +1,4 @@
-export const categories = ["Cachimbos", "Charutos", "Fumos", "Cigarros", "Vestuário", "Baralhos", "Acessórios"] as const;
+export const categories = ["Cachimbos", "Charutos", "Fumos", "Cigarros", "Vestuário", "Baralhos", "Acessórios", "Bebidas"] as const;
 
 export type Product = {
   id: string;
