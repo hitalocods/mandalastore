@@ -2,6 +2,14 @@ import { unstable_noStore as noStore } from "next/cache";
 import type { Neighborhood } from "@/types/neighborhood";
 import { sql } from "@/lib/db";
 
+function normalizeNeighborhood(neighborhood: Neighborhood): Neighborhood {
+  return {
+    ...neighborhood,
+    delivery_fee: Number(neighborhood.delivery_fee) || 0,
+    sort_order: Number(neighborhood.sort_order) || 0,
+  };
+}
+
 export async function getNeighborhoods(): Promise<Neighborhood[]> {
   noStore();
 
@@ -11,7 +19,7 @@ export async function getNeighborhoods(): Promise<Neighborhood[]> {
       ORDER BY sort_order ASC, name ASC
     `;
 
-    return neighborhoods as Neighborhood[];
+    return (neighborhoods as Neighborhood[]).map(normalizeNeighborhood);
   } catch {
     return [];
   }
@@ -27,7 +35,7 @@ export async function getActiveNeighborhoods(): Promise<Neighborhood[]> {
       ORDER BY sort_order ASC, name ASC
     `;
 
-    return neighborhoods as Neighborhood[];
+    return (neighborhoods as Neighborhood[]).map(normalizeNeighborhood);
   } catch {
     return [];
   }
@@ -42,7 +50,7 @@ export async function getNeighborhoodById(id: string): Promise<Neighborhood | nu
       WHERE id = ${id}
     `;
 
-    return neighborhoods[0] as Neighborhood || null;
+    return neighborhoods[0] ? normalizeNeighborhood(neighborhoods[0] as Neighborhood) : null;
   } catch {
     return null;
   }

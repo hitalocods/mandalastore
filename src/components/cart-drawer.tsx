@@ -62,7 +62,7 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
 
     if (data.deliveryType === "delivery") {
       const neighborhood = neighborhoods.find((n: Neighborhood) => n.id === data.neighborhoodId);
-      message += `--------------------------------\n\nSe entrega:\n\nBairro:\n${neighborhood?.name || ""}\n\nEndereço:\n${data.address}\n\nNúmero:\n${data.number}\n\nComplemento:\n${data.complement || ""}\n\nReferência:\n${data.reference || ""}\n\nEntrega:\n${data.deliveryOption === "mototaxi" ? "Moto Táxi" : "Entrega da Loja"}\n\n`;
+      message += `--------------------------------\n\nSe entrega:\n\nBairro:\n${neighborhood?.name || ""}\n\nEndereço:\n${data.address}\n\nNúmero:\n${data.number}\n\nComplemento:\n${data.complement || ""}\n\nReferência:\n${data.reference || ""}\n\nEntrega:\nMoto Táxi da Loja\n\n`;
     }
 
     message += `--------------------------------\n\nPedido realizado pelo site.`;

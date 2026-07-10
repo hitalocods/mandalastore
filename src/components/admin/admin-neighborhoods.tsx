@@ -1,6 +1,8 @@
 import { Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deleteNeighborhood, toggleNeighborhoodActive } from "@/app/actions/neighborhoods";
+import { NeighborhoodForm } from "@/components/admin/neighborhood-form";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { formatCurrency } from "@/lib/utils";
 import type { Neighborhood } from "@/types/neighborhood";
 
@@ -33,6 +35,21 @@ export function AdminNeighborhoods({ neighborhoods }: { neighborhoods: Neighborh
                 {neighborhood.is_active ? <ToggleLeft className="h-4 w-4" /> : <ToggleRight className="h-4 w-4" />}
               </Button>
             </form>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="premium-scrollbar overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Editar bairro</SheetTitle>
+                </SheetHeader>
+                <div className="px-6 pb-6">
+                  <NeighborhoodForm neighborhood={neighborhood} />
+                </div>
+              </SheetContent>
+            </Sheet>
             <form action={deleteNeighborhood}>
               <input type="hidden" name="id" value={neighborhood.id} />
               <Button type="submit" variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">

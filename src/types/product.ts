@@ -1,4 +1,27 @@
-export const categories = ["Cachimbos", "Charutos", "Fumos", "Cigarros", "Vestuário", "Baralhos", "Acessórios", "Bebidas"] as const;
+export const categories = [
+  "Cachimbos",
+  "Charutos",
+  "Fumos",
+  "Cigarros",
+  "Vestuário Masculino",
+  "Vestuário Feminino",
+  "Baralhos",
+  "Acessórios",
+  "Bebidas",
+  "Itens de Barro",
+  "Guias",
+  "Taças",
+  "Chapéus",
+  "Leques",
+  "Exus de Cerâmica",
+  "Erês",
+  "Pombagira de Gesso",
+  "Caboclos de Gesso",
+  "Orixás",
+  "Iemanjá",
+  "Imagens Católicas",
+  "Preto Velho (Gesso e Cerâmica)",
+] as const;
 
 export type Product = {
   id: string;

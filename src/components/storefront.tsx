@@ -47,11 +47,11 @@ export function Storefront({ products, neighborhoods }: { products: Product[]; n
 
             <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-black sm:mb-4 sm:text-xs">
 
-              Acessorios premium
+              Acessórios premium
 
             </p>
 
-            <h1 className="max-w-2xl bg-gradient-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-4xl font-semibold tracking-[-0.035em] text-transparent sm:text-6xl lg:text-7xl">
+            <h1 className="max-w-2xl bg-linear-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-4xl font-semibold tracking-[-0.035em] text-transparent sm:text-6xl lg:text-7xl">
 
               Mandala Prime
 
@@ -59,7 +59,7 @@ export function Storefront({ products, neighborhoods }: { products: Product[]; n
 
             <p className="mt-4 max-w-md text-sm leading-6 text-black sm:mt-5 sm:text-base sm:leading-7">
 
-              Capas, Acessorios, Roupas e muito mais.
+              Capas, acessórios, roupas e muito mais.
 
             </p>
 

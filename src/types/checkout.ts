@@ -2,7 +2,7 @@ export type DeliveryType = "pickup" | "delivery";
 
 export type PaymentMethod = "money" | "pix" | "debit" | "credit";
 
-export type DeliveryOption = "store" | "mototaxi";
+export type DeliveryOption = "mototaxi";
 
 export type CheckoutData = {
   deliveryType: DeliveryType;

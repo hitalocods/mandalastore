@@ -118,7 +118,7 @@ export function ProductForm({ product }: { product?: Product }) {
         <Input id={product ? `name-${product.id}` : "name"} name="name" defaultValue={product?.name} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor={product ? `description-${product.id}` : "description"}>Descricao</Label>
+        <Label htmlFor={product ? `description-${product.id}` : "description"}>Descrição</Label>
         <Textarea
           id={product ? `description-${product.id}` : "description"}
           name="description"
@@ -127,7 +127,7 @@ export function ProductForm({ product }: { product?: Product }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor={product ? `price-${product.id}` : "price"}>Preco</Label>
+          <Label htmlFor={product ? `price-${product.id}` : "price"}>Preço</Label>
           <Input
             id={product ? `price-${product.id}` : "price"}
             name="price"
@@ -230,7 +230,7 @@ export function ProductForm({ product }: { product?: Product }) {
       <div className="pt-1 lg:sticky lg:bottom-0 lg:bg-white lg:pb-1">
         <Button disabled={isPending} className="rounded-full">
           {product ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {product ? "Salvar alteracoes" : "Adicionar produto"}
+          {product ? "Salvar alterações" : "Adicionar produto"}
         </Button>
       </div>
     </form>

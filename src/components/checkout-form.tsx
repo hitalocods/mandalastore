@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/utils";
-import type { DeliveryType, PaymentMethod, DeliveryOption, CheckoutData } from "@/types/checkout";
+import type { DeliveryType, PaymentMethod, CheckoutData } from "@/types/checkout";
 import type { Neighborhood } from "@/types/neighborhood";
 
 type CheckoutFormProps = {
@@ -20,7 +20,6 @@ type CheckoutFormProps = {
 export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutFormProps) {
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("pickup");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
-  const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>("store");
   const [installments, setInstallments] = useState(1);
   const [needsChange, setNeedsChange] = useState(false);
   const [changeFor, setChangeFor] = useState("");
@@ -32,19 +31,25 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
   const [complement, setComplement] = useState("");
   const [reference, setReference] = useState("");
 
+  const hasNeighborhoods = neighborhoods.length > 0;
   const selectedNeighborhood = neighborhoods.find((n) => n.id === neighborhoodId);
-  const deliveryFee = deliveryType === "delivery" && selectedNeighborhood ? selectedNeighborhood.delivery_fee : 0;
-  const total = subtotal + deliveryFee;
+  const subtotalValue = Number(subtotal) || 0;
+  const deliveryFee = deliveryType === "delivery" && selectedNeighborhood ? Number(selectedNeighborhood.delivery_fee) || 0 : 0;
+  const total = subtotalValue + deliveryFee;
+  const isSubmitDisabled = deliveryType === "delivery" && !selectedNeighborhood;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (deliveryType === "delivery" && !selectedNeighborhood) {
+      return;
+    }
 
     const data: CheckoutData = {
       deliveryType,
       fullName,
       whatsapp,
       paymentMethod,
-      deliveryOption,
     };
 
     if (paymentMethod === "credit") {
@@ -57,6 +62,7 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
     }
 
     if (deliveryType === "delivery") {
+      data.deliveryOption = "mototaxi";
       data.neighborhoodId = neighborhoodId;
       data.address = address;
       data.number = number;
@@ -79,12 +85,15 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
             </Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="delivery" id="delivery" />
-            <Label htmlFor="delivery" className="cursor-pointer">
-              Entrega
+            <RadioGroupItem value="delivery" id="delivery" disabled={!hasNeighborhoods} />
+            <Label htmlFor="delivery" className={`cursor-pointer ${!hasNeighborhoods ? "text-muted-foreground" : ""}`}>
+              Entrega {!hasNeighborhoods ? "(indisponível)" : ""}
             </Label>
           </div>
         </RadioGroup>
+        {!hasNeighborhoods && (
+          <p className="text-xs text-muted-foreground">No momento, não há bairros ativos para entrega.</p>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -101,7 +110,18 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
         <>
           <div className="space-y-3">
             <Label htmlFor="neighborhood">Bairro</Label>
-            <Input id="neighborhood" value={neighborhoodId} onChange={(e) => setNeighborhoodId(e.target.value)} placeholder="Digite o nome do bairro" required />
+            <Select value={neighborhoodId} onValueChange={setNeighborhoodId}>
+              <SelectTrigger id="neighborhood">
+                <SelectValue placeholder="Selecione o bairro" />
+              </SelectTrigger>
+              <SelectContent>
+                {neighborhoods.map((neighborhood) => (
+                  <SelectItem key={neighborhood.id} value={neighborhood.id}>
+                    {neighborhood.name} - {formatCurrency(neighborhood.delivery_fee)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-3">
@@ -123,23 +143,9 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
             <Label htmlFor="reference">Ponto de Referência (opcional)</Label>
             <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} />
           </div>
-
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">Tipo de Entrega</Label>
-            <RadioGroup value={deliveryOption} onValueChange={(value: string) => setDeliveryOption(value as DeliveryOption)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="store" id="store" />
-                <Label htmlFor="store" className="cursor-pointer">
-                  Entrega da Loja
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="mototaxi" id="mototaxi" />
-                <Label htmlFor="mototaxi" className="cursor-pointer">
-                  Moto Táxi
-                </Label>
-              </div>
-            </RadioGroup>
+          <div className="rounded-md border bg-muted/30 p-3 text-sm">
+            <p className="font-medium">Tipo de entrega</p>
+            <p className="text-muted-foreground">Moto Táxi da Loja</p>
           </div>
         </>
       )}
@@ -220,7 +226,7 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
       <div className="space-y-2 border-t pt-4">
         <div className="flex justify-between text-sm">
           <span>Subtotal</span>
-          <span>{formatCurrency(subtotal)}</span>
+          <span>{formatCurrency(subtotalValue)}</span>
         </div>
         {deliveryFee > 0 && (
           <div className="flex justify-between text-sm">
@@ -234,7 +240,7 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
         </div>
       </div>
 
-      <Button type="submit" className="h-12 w-full rounded-full">
+      <Button type="submit" className="h-12 w-full rounded-full" disabled={isSubmitDisabled}>
         Finalizar Pedido
       </Button>
     </form>

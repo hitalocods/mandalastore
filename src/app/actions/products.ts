@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isAdminAuthenticated } from "@/lib/auth";
-import { categories } from "@/types/product";
 import { uploadImageToBlob } from "@/lib/blob";
 import { sql } from "@/lib/db";
+import { toCanonicalCategory } from "@/lib/utils";
 
 async function assertAdmin() {
   const isAdmin = await isAdminAuthenticated();
@@ -22,10 +22,7 @@ function getNumber(formData: FormData, key: string) {
 
 function getCategory(formData: FormData): string {
   const category = String(formData.get("category") || "");
-  if (!categories.includes(category as typeof categories[number])) {
-    return "Acessórios";
-  }
-  return category;
+  return toCanonicalCategory(category) || "Acessórios";
 }
 
 async function uploadImage(file: File | null) {

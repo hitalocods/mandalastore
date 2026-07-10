@@ -18,8 +18,31 @@ function getNumber(formData: FormData, key: string) {
   return Number(raw);
 }
 
+async function ensureNeighborhoodsTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS neighborhoods (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      delivery_fee DECIMAL(10, 2) NOT NULL DEFAULT 0,
+      is_active BOOLEAN NOT NULL DEFAULT TRUE,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_neighborhoods_sort_order ON neighborhoods(sort_order ASC)
+  `;
+}
+
+function revalidateNeighborhoodRoutes() {
+  revalidatePath("/admin");
+  revalidatePath("/admin/bairros");
+}
+
 export async function createNeighborhood(formData: FormData) {
   await assertAdmin();
+  await ensureNeighborhoodsTable();
 
   await sql`
     INSERT INTO neighborhoods (id, name, delivery_fee, is_active, sort_order)
@@ -32,11 +55,12 @@ export async function createNeighborhood(formData: FormData) {
     )
   `;
 
-  revalidatePath("/admin");
+  revalidateNeighborhoodRoutes();
 }
 
 export async function updateNeighborhood(formData: FormData) {
   await assertAdmin();
+  await ensureNeighborhoodsTable();
   const id = String(formData.get("id") || "");
 
   await sql`
@@ -49,11 +73,12 @@ export async function updateNeighborhood(formData: FormData) {
     WHERE id = ${id}
   `;
 
-  revalidatePath("/admin");
+  revalidateNeighborhoodRoutes();
 }
 
 export async function deleteNeighborhood(formData: FormData) {
   await assertAdmin();
+  await ensureNeighborhoodsTable();
   const id = String(formData.get("id") || "");
 
   await sql`
@@ -61,11 +86,12 @@ export async function deleteNeighborhood(formData: FormData) {
     WHERE id = ${id}
   `;
 
-  revalidatePath("/admin");
+  revalidateNeighborhoodRoutes();
 }
 
 export async function toggleNeighborhoodActive(formData: FormData) {
   await assertAdmin();
+  await ensureNeighborhoodsTable();
   const id = String(formData.get("id") || "");
   const isActive = String(formData.get("is_active") || "false") === "true";
 
@@ -75,5 +101,5 @@ export async function toggleNeighborhoodActive(formData: FormData) {
     WHERE id = ${id}
   `;
 
-  revalidatePath("/admin");
+  revalidateNeighborhoodRoutes();
 }
