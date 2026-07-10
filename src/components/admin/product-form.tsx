@@ -105,6 +105,8 @@ export function ProductForm({ product }: { product?: Product }) {
           }
         });
       }}
+      encType="multipart/form-data"
+      method="post"
       className="grid gap-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto lg:pr-1"
     >
       {product && (
@@ -211,6 +213,7 @@ export function ProductForm({ product }: { product?: Product }) {
                     id={product ? `image-${product.id}` : "image"}
                     name="image"
                     type="file"
+                    required={!product}
                     accept=".jpg,.jpeg,.png,.webp"
                     className="sr-only"
                     onChange={handleFileChange}
