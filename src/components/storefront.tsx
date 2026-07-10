@@ -53,7 +53,7 @@ export function Storefront({ products, neighborhoods }: { products: Product[]; n
 
             <h1 className="max-w-2xl bg-linear-to-r from-[#cc0000] to-[#d4af37] bg-clip-text text-4xl font-semibold tracking-[-0.035em] text-transparent sm:text-6xl lg:text-7xl">
 
-              Mandala Prime
+              Mandalla Prime
 
             </h1>
 
@@ -81,7 +81,7 @@ export function Storefront({ products, neighborhoods }: { products: Product[]; n
 
               src="/logo-mandala.png"
 
-              alt="Mandala Prime"
+              alt="Mandalla Prime"
 
               width={200}
 
