@@ -101,33 +101,47 @@ export function Storefront({ products, neighborhoods }: { products: Product[]; n
 
         <section id="categories" className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
 
-          <div className="premium-scrollbar -mx-3 flex snap-x gap-2 overflow-x-auto px-3 pb-3 sm:mx-0 sm:px-0">
+          <div className="relative">
 
-            {(["Todos", ...categories] as const).map((category) => (
+            <div className="premium-scrollbar -mx-3 flex snap-x gap-2 overflow-x-auto px-3 pb-3 sm:mx-0 sm:px-0">
 
-              <button
+              {(["Todos", ...categories] as const).map((category) => (
 
-                key={category}
+                <button
 
-                onClick={() => setActiveCategory(category)}
+                  key={category}
 
-                className={`min-h-10 shrink-0 snap-start rounded-full border px-4 py-2 text-sm transition sm:px-5 ${
+                  onClick={() => setActiveCategory(category)}
 
-                  activeCategory === category
+                  className={`min-h-10 shrink-0 snap-start rounded-full border px-4 py-2 text-sm transition sm:px-5 ${
 
-                    ? "bg-primary text-primary-foreground"
+                    activeCategory === category
 
-                    : "bg-white text-black hover:border-foreground"
+                      ? "bg-primary text-primary-foreground"
 
-                }`}
+                      : "bg-white text-black hover:border-foreground"
 
-              >
+                  }`}
 
-                {category}
+                >
 
-              </button>
+                  {category}
 
-            ))}
+                </button>
+
+              ))}
+
+            </div>
+
+            <div className="pointer-events-none flex justify-end pr-1 sm:hidden">
+
+              <span className="text-xs font-semibold text-[#d4af37] drop-shadow-[0_0_6px_rgba(212,175,55,0.85)] animate-pulse">
+
+                Arraste -&gt;
+
+              </span>
+
+            </div>
 
           </div>
 
