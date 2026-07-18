@@ -27,3 +27,18 @@ CREATE TABLE IF NOT EXISTS neighborhoods (
 );
 
 CREATE INDEX IF NOT EXISTS idx_neighborhoods_sort_order ON neighborhoods(sort_order ASC);
+
+-- Schema para tabela de categorias e subcategorias
+
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  parent_id TEXT REFERENCES categories(id) ON DELETE CASCADE,
+  slug TEXT UNIQUE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);
+CREATE INDEX IF NOT EXISTS idx_categories_sort_order ON categories(sort_order ASC);
+

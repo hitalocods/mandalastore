@@ -21,8 +21,8 @@ function getNumber(formData: FormData, key: string) {
 }
 
 function getCategory(formData: FormData): string {
-  const category = String(formData.get("category") || "");
-  return toCanonicalCategory(category) || "Acessórios";
+  const category = String(formData.get("category") || "").trim();
+  return toCanonicalCategory(category) || category || "Acessórios";
 }
 
 async function uploadImage(file: File | null) {

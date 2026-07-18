@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ImageIcon, Pencil, Plus, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { createProduct, updateProduct } from "@/app/actions/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { categories, type Product } from "@/types/product";
+import { categories as defaultCategories, type Product } from "@/types/product";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -27,8 +26,22 @@ function isValidImage(file: File) {
   return null;
 }
 
-export function ProductForm({ product }: { product?: Product }) {
-  const [category, setCategory] = useState(product?.category || categories[0]);
+export function ProductForm({
+  product,
+  availableCategories = defaultCategories,
+  onSuccess,
+}: {
+  product?: Product;
+  availableCategories?: readonly string[];
+  onSuccess?: () => void;
+}) {
+  // Deduplicate category list to avoid duplicate keys
+  const uniqueCategories = useMemo(() => {
+    const list = Array.from(new Set(availableCategories));
+    return list.length > 0 ? list : Array.from(defaultCategories);
+  }, [availableCategories]);
+
+  const [category, setCategory] = useState(product?.category || uniqueCategories[0] || "Acessórios");
   const [isPending, startTransition] = useTransition();
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -95,19 +108,18 @@ export function ProductForm({ product }: { product?: Product }) {
           try {
             if (product) {
               await updateProduct(formData);
-              toast.success("Produto atualizado");
+              toast.success("Produto atualizado com sucesso!");
             } else {
               await createProduct(formData);
-              toast.success("Produto criado");
+              toast.success("Produto cadastrado com sucesso!");
             }
+            if (onSuccess) onSuccess();
           } catch (error) {
             toast.error(error instanceof Error ? error.message : "Falha ao salvar produto");
           }
         });
       }}
-      encType="multipart/form-data"
-      method="post"
-      className="grid gap-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto lg:pr-1"
+      className="space-y-4"
     >
       {product && (
         <>
@@ -115,21 +127,34 @@ export function ProductForm({ product }: { product?: Product }) {
           <input type="hidden" name="current_image_url" value={product.image_url || ""} />
         </>
       )}
-      <div className="grid gap-2">
-        <Label htmlFor={product ? `name-${product.id}` : "name"}>Nome</Label>
-        <Input id={product ? `name-${product.id}` : "name"} name="name" defaultValue={product?.name} required />
+      <div className="grid gap-1.5">
+        <Label htmlFor={product ? `name-${product.id}` : "name"} className="text-xs font-semibold text-slate-700">
+          Nome do Produto
+        </Label>
+        <Input
+          id={product ? `name-${product.id}` : "name"}
+          name="name"
+          defaultValue={product?.name}
+          className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-amber-500"
+          required
+        />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor={product ? `description-${product.id}` : "description"}>Descrição</Label>
+      <div className="grid gap-1.5">
+        <Label htmlFor={product ? `description-${product.id}` : "description"} className="text-xs font-semibold text-slate-700">
+          Descrição
+        </Label>
         <Textarea
           id={product ? `description-${product.id}` : "description"}
           name="description"
           defaultValue={product?.description || ""}
+          className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-amber-500 min-h-[70px]"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div className="grid gap-2">
-          <Label htmlFor={product ? `price-${product.id}` : "price"}>Preço</Label>
+        <div className="grid gap-1.5">
+          <Label htmlFor={product ? `price-${product.id}` : "price"} className="text-xs font-semibold text-slate-700">
+            Preço (R$)
+          </Label>
           <Input
             id={product ? `price-${product.id}` : "price"}
             name="price"
@@ -137,11 +162,14 @@ export function ProductForm({ product }: { product?: Product }) {
             min="0"
             step="0.01"
             defaultValue={product?.price}
+            className="bg-white border-slate-200 text-slate-900 focus:border-amber-500"
             required
           />
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor={product ? `stock-${product.id}` : "stock"}>Estoque</Label>
+        <div className="grid gap-1.5">
+          <Label htmlFor={product ? `stock-${product.id}` : "stock"} className="text-xs font-semibold text-slate-700">
+            Estoque
+          </Label>
           <Input
             id={product ? `stock-${product.id}` : "stock"}
             name="stock"
@@ -149,30 +177,32 @@ export function ProductForm({ product }: { product?: Product }) {
             min="0"
             step="1"
             defaultValue={product?.stock ?? 0}
+            className="bg-white border-slate-200 text-slate-900 focus:border-amber-500"
             required
           />
         </div>
       </div>
-      <div className="grid gap-2">
-        <Label>Categoria</Label>
-        <Select value={category} onValueChange={(value) => setCategory(value as typeof category)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((item) => (
-              <SelectItem value={item} key={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid gap-1.5">
+        <Label className="text-xs font-semibold text-slate-700">Categoria ou Subcategoria</Label>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:outline-hidden focus:border-amber-500"
+        >
+          {uniqueCategories.map((item, idx) => (
+            <option value={item} key={`${item}-${idx}`}>
+              {item}
+            </option>
+          ))}
+        </select>
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor={product ? `image-${product.id}` : "image"}>Imagem</Label>
-        <div className="rounded-lg border bg-muted/20 p-3 sm:p-4">
-          <div className="grid gap-3 sm:grid-cols-[140px_1fr]">
-            <div className="flex h-36 items-center justify-center overflow-hidden rounded-md border bg-background">
+      <div className="grid gap-1.5">
+        <Label htmlFor={product ? `image-${product.id}` : "image"} className="text-xs font-semibold text-slate-700">
+          Imagem do Produto
+        </Label>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="grid gap-3 sm:grid-cols-[100px_1fr]">
+            <div className="flex h-24 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
               {shownImageUrl ? (
                 <img
                   src={shownImageUrl}
@@ -180,34 +210,36 @@ export function ProductForm({ product }: { product?: Product }) {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 px-4 text-center text-xs text-muted-foreground">
-                  <ImageIcon className="h-5 w-5" />
-                  <span>Nenhuma imagem selecionada</span>
+                <div className="flex flex-col items-center gap-1 px-2 text-center text-[10px] text-slate-400">
+                  <ImageIcon className="h-5 w-5 text-slate-400" />
+                  <span>Sem imagem</span>
                 </div>
               )}
             </div>
-            <div className="flex min-w-0 flex-col justify-between gap-3">
+            <div className="flex min-w-0 flex-col justify-between gap-2">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">{selectedFileName || (showingExistingImage ? "Imagem atual cadastrada" : "Nenhum arquivo escolhido")}</span>
+                  <span className="text-xs font-medium text-slate-700 truncate max-w-[160px]">
+                    {selectedFileName || (showingExistingImage ? "Imagem cadastrada" : "Nenhum arquivo")}
+                  </span>
                   {selectedFileName && (
-                    <span className="rounded-full bg-secondary px-2 py-1 text-[11px] text-secondary-foreground">
-                      Nova imagem selecionada
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                      Novo
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">Aceita JPG, PNG e WEBP. Tamanho máximo: 5 MB.</p>
-                {imageError && <p className="text-xs text-destructive">{imageError}</p>}
+                <p className="text-[10px] text-slate-400">JPG, PNG ou WEBP (Max: 5 MB).</p>
+                {imageError && <p className="text-[10px] text-rose-600 font-medium">{imageError}</p>}
               </div>
               <div className="flex flex-wrap gap-2">
                 <label
                   className={cn(
-                    "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border bg-background px-4 text-sm font-medium transition hover:bg-accent",
+                    "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-100 shadow-2xs",
                     isPending && "pointer-events-none opacity-60",
                   )}
                 >
-                  <Upload className="h-4 w-4" />
-                  {shownImageUrl ? "Trocar imagem" : "Selecionar imagem"}
+                  <Upload className="h-3.5 w-3.5 text-amber-600" />
+                  {shownImageUrl ? "Trocar imagem" : "Escolher arquivo"}
                   <Input
                     ref={fileInputRef}
                     id={product ? `image-${product.id}` : "image"}
@@ -220,9 +252,13 @@ export function ProductForm({ product }: { product?: Product }) {
                   />
                 </label>
                 {selectedFileName && (
-                  <Button type="button" variant="outline" className="h-10 rounded-md px-4" onClick={clearSelectedImage}>
-                    <X className="h-4 w-4" />
-                    Trocar imagem
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-8 rounded-lg px-2 text-xs text-slate-500 hover:text-slate-800"
+                    onClick={clearSelectedImage}
+                  >
+                    <X className="h-3.5 w-3.5" />
                   </Button>
                 )}
               </div>
@@ -230,10 +266,13 @@ export function ProductForm({ product }: { product?: Product }) {
           </div>
         </div>
       </div>
-      <div className="pt-1 lg:sticky lg:bottom-0 lg:bg-white lg:pb-1">
-        <Button disabled={isPending} className="rounded-full">
-          {product ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {product ? "Salvar alterações" : "Adicionar produto"}
+      <div className="pt-2">
+        <Button
+          disabled={isPending}
+          className="w-full rounded-lg bg-gradient-to-r from-[#cc0000] to-[#d4af37] text-white font-bold text-xs py-2.5 shadow-xs hover:brightness-105"
+        >
+          {product ? <Pencil className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+          {product ? "Salvar Alterações" : "Cadastrar Produto"}
         </Button>
       </div>
     </form>
