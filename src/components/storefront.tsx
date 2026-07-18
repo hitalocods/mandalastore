@@ -71,11 +71,11 @@ export function Storefront({
             className="flex items-center justify-center"
           >
             <Image
-              src="/logo-mandala.png"
+              src="/logo-mandala.jpg"
               alt="Mandalla Prime"
-              width={200}
-              height={200}
-              className="h-auto w-auto max-h-56 object-contain sm:max-h-72"
+              width={600}
+              height={900}
+              className="w-full max-w-[340px] sm:max-w-md h-auto rounded-2xl shadow-2xl object-cover border border-amber-500/30"
               priority
             />
           </motion.div>

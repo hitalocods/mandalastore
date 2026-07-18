@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Menu, Search, ShoppingBag, Sparkles, X, Tag } from "lucide-react";
+import { ChevronDown, ChevronRight, Menu, ShoppingBag, Sparkles, X, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/store/cart-store";
 import type { CategoryWithChildren } from "@/types/category";
 
@@ -76,12 +76,6 @@ export function SiteHeader({
           >
             Categorias
           </a>
-          <Link
-            href="/admin"
-            className="text-xs font-semibold tracking-wider text-muted-foreground uppercase transition hover:text-foreground"
-          >
-            Painel Admin
-          </Link>
         </nav>
 
         <div className="flex items-center gap-1">
@@ -218,17 +212,6 @@ export function SiteHeader({
                       </div>
                     </div>
                   )}
-                </div>
-
-                {/* Footer Link */}
-                <div className="border-t p-3 bg-muted/20">
-                  <Link
-                    href="/admin"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex w-full items-center justify-center rounded-lg border border-border bg-background py-2 text-xs font-semibold text-foreground shadow-xs transition hover:bg-accent"
-                  >
-                    Painel do Administrador
-                  </Link>
                 </div>
               </div>
             </SheetContent>
