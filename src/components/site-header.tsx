@@ -95,11 +95,36 @@ export function SiteHeader({
           </Button>
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full md:hidden" aria-label="Menu">
-                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </SheetTrigger>
+            <div className="relative group md:hidden">
+              {/* Ambient glowing ring in Mandalla Prime colors */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#cc0000] via-[#e63946] to-[#d4af37] opacity-80 blur-[3px] animate-pulse group-hover:opacity-100 transition duration-300"
+              />
+
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Abrir Menu de Categorias"
+                  className="relative flex items-center gap-1.5 h-9 rounded-full bg-zinc-950 px-3 text-xs font-bold text-white border border-amber-500/40 hover:bg-zinc-900 active:scale-95 transition-all duration-200 shadow-md shadow-[#cc0000]/25 cursor-pointer select-none"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                  {mobileOpen ? (
+                    <>
+                      <span className="tracking-wider text-amber-200">FECHAR</span>
+                      <X className="h-4 w-4 text-white" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="tracking-wider bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
+                        MENU
+                      </span>
+                      <Menu className="h-4 w-4 text-amber-400" />
+                    </>
+                  )}
+                </button>
+              </SheetTrigger>
+            </div>
             <SheetContent side="left" className="w-[85vw] max-w-xs p-0 border-r border-border/50">
               <div className="flex h-full flex-col bg-background">
                 {/* Header */}
