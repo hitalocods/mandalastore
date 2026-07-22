@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { CartDrawer } from "@/components/cart-drawer";
 import { ProductCard } from "@/components/product-card";
 import { SiteHeader } from "@/components/site-header";
@@ -24,24 +25,6 @@ export function Storefront({
 }) {
   const [cartOpen, setCartOpen] = useState(false);
   const { activeCategory, filteredProducts, setActiveCategory } = useProductFilter(products, categoriesTree);
-
-  // Extract deduplicated list of category names for horizontal pill scroll (on desktop)
-  const displayCategories = useMemo(() => {
-    let names: string[] = [];
-    if (categoriesTree.length > 0) {
-      categoriesTree.forEach((cat) => {
-        names.push(cat.name);
-        if (cat.children) {
-          cat.children.forEach((child) => names.push(child.name));
-        }
-      });
-    } else {
-      names = [...defaultCategories];
-    }
-    // Remove duplicates
-    const uniqueNames = Array.from(new Set(names));
-    return ["Todos", ...uniqueNames];
-  }, [categoriesTree]);
 
   return (
     <CartProvider>
@@ -81,15 +64,113 @@ export function Storefront({
           </motion.div>
         </section>
 
-        {/* Categories Bar: Visible only on desktop (sm:block). On mobile, categories are in the hamburger menu */}
-        <section id="categories" className="hidden sm:block mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-          <div className="relative">
-            <div className="premium-scrollbar -mx-3 flex snap-x gap-2 overflow-x-auto px-3 pb-3 sm:mx-0 sm:px-0">
-              {displayCategories.map((category, index) => (
+        {/* Categories Bar: Visible only on desktop/notebook (sm:block) with hover subcategory dropdowns */}
+        <section id="categories" className="hidden sm:block mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 z-30 relative">
+          <div className="flex flex-wrap items-center gap-2.5 pb-2 overflow-visible">
+            {/* "Todos" Pill */}
+            <button
+              onClick={() => setActiveCategory("Todos")}
+              className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition sm:px-5 sm:text-sm cursor-pointer ${
+                activeCategory === "Todos"
+                  ? "border-[#cc0000] bg-gradient-to-r from-[#cc0000] to-[#b30000] text-white shadow-sm"
+                  : "bg-background text-foreground border-border hover:border-foreground/40"
+              }`}
+            >
+              Todos
+            </button>
+
+            {/* Tree Categories */}
+            {categoriesTree.length > 0 ? (
+              categoriesTree.map((cat) => {
+                const hasChildren = cat.children && cat.children.length > 0;
+                const isParentActive = activeCategory === cat.name;
+                const activeChild = cat.children?.find((sub) => sub.name === activeCategory);
+                const isCategoryActive = isParentActive || !!activeChild;
+
+                if (!hasChildren) {
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveCategory(cat.name)}
+                      className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition sm:px-5 sm:text-sm cursor-pointer ${
+                        isParentActive
+                          ? "border-[#cc0000] bg-gradient-to-r from-[#cc0000] to-[#b30000] text-white shadow-sm"
+                          : "bg-background text-foreground border-border hover:border-foreground/40"
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                  );
+                }
+
+                return (
+                  <div key={cat.id} className="relative group/cat shrink-0">
+                    <button
+                      onClick={() => setActiveCategory(cat.name)}
+                      className={`min-h-10 flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition sm:px-5 sm:text-sm cursor-pointer ${
+                        isCategoryActive
+                          ? "border-[#cc0000] bg-gradient-to-r from-[#cc0000] to-[#b30000] text-white shadow-sm"
+                          : "bg-background text-foreground border-border hover:border-foreground/40"
+                      }`}
+                    >
+                      <span>
+                        {cat.name}
+                        {activeChild && (
+                          <span className="ml-1 text-[11px] opacity-90 font-normal">
+                            ({activeChild.name})
+                          </span>
+                        )}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-70 transition-transform duration-200 group-hover/cat:rotate-180" />
+                    </button>
+
+                    {/* Subcategories Dropdown Menu on Hover */}
+                    <div className="absolute left-0 top-full pt-1.5 z-50 opacity-0 pointer-events-none group-hover/cat:opacity-100 group-hover/cat:pointer-events-auto transition-all duration-200 transform origin-top-left group-hover/cat:scale-100 scale-95 min-w-[200px]">
+                      <div className="rounded-xl border border-border/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl p-1.5 shadow-xl ring-1 ring-black/5">
+                        <button
+                          onClick={() => setActiveCategory(cat.name)}
+                          className={`w-full text-left rounded-lg px-3 py-2 text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                            isParentActive
+                              ? "bg-[#cc0000]/10 text-[#cc0000]"
+                              : "text-foreground hover:bg-amber-500/10 hover:text-amber-600"
+                          }`}
+                        >
+                          <span>Ver todos em {cat.name}</span>
+                          <ChevronRight className="h-3 w-3 opacity-60" />
+                        </button>
+
+                        <div className="my-1 border-t border-border/60" />
+
+                        <div className="space-y-0.5 max-h-56 overflow-y-auto premium-scrollbar">
+                          {cat.children.map((sub) => {
+                            const isSubActive = activeCategory === sub.name;
+                            return (
+                              <button
+                                key={sub.id}
+                                onClick={() => setActiveCategory(sub.name)}
+                                className={`w-full text-left rounded-lg px-3 py-1.5 text-xs transition flex items-center gap-2 cursor-pointer ${
+                                  isSubActive
+                                    ? "font-bold text-[#cc0000] bg-[#cc0000]/10"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                }`}
+                              >
+                                <span className={`h-1.5 w-1.5 rounded-full ${isSubActive ? "bg-[#cc0000]" : "bg-amber-500/70"}`} />
+                                {sub.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              defaultCategories.map((category, index) => (
                 <button
                   key={`${category}-${index}`}
                   onClick={() => setActiveCategory(category)}
-                  className={`min-h-10 shrink-0 snap-start rounded-full border px-4 py-2 text-xs font-semibold transition sm:px-5 sm:text-sm ${
+                  className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition sm:px-5 sm:text-sm cursor-pointer ${
                     activeCategory === category
                       ? "border-[#cc0000] bg-gradient-to-r from-[#cc0000] to-[#b30000] text-white shadow-sm"
                       : "bg-background text-foreground border-border hover:border-foreground/40"
@@ -97,8 +178,8 @@ export function Storefront({
                 >
                   {category}
                 </button>
-              ))}
-            </div>
+              ))
+            )}
           </div>
         </section>
 

@@ -70,12 +70,91 @@ export function SiteHeader({
           >
             Produtos
           </a>
-          <a
-            href="#categories"
-            className="text-foreground/80 transition hover:text-[#d4af37]"
-          >
-            Categorias
-          </a>
+
+          {/* Desktop Hover Category Dropdown Menu */}
+          <div className="relative group py-2">
+            <a
+              href="#categories"
+              className="flex items-center gap-1 text-foreground/80 transition hover:text-[#d4af37] group-hover:text-[#d4af37]"
+            >
+              <span>Categorias</span>
+              <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-180 text-amber-500" />
+            </a>
+
+            <div className="absolute top-full left-0 pt-1 hidden group-hover:block z-50 w-64 animate-in fade-in-0 zoom-in-95 duration-150">
+              <div className="rounded-xl border border-border/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl p-2 shadow-2xl ring-1 ring-black/5 max-h-[75vh] overflow-y-auto premium-scrollbar">
+                <button
+                  onClick={() => handleCategorySelect("Todos")}
+                  className={`w-full flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold transition cursor-pointer ${
+                    activeCategory === "Todos"
+                      ? "bg-gradient-to-r from-[#cc0000] to-[#b30000] text-white shadow-xs"
+                      : "text-foreground hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Tag className="h-3.5 w-3.5 text-amber-500" /> Todos os Produtos
+                  </span>
+                </button>
+
+                {categoriesTree.length > 0 && (
+                  <>
+                    <div className="my-1.5 border-t border-border/50" />
+                    <div className="space-y-1">
+                      {categoriesTree.map((cat) => {
+                        const hasChildren = cat.children && cat.children.length > 0;
+                        const isParentActive = activeCategory === cat.name;
+                        const isChildActive = cat.children?.some((sub) => sub.name === activeCategory);
+
+                        return (
+                          <div key={cat.id} className="rounded-lg overflow-hidden border border-border/30 bg-muted/20">
+                            <button
+                              onClick={() => handleCategorySelect(cat.name)}
+                              className={`w-full text-left flex items-center justify-between px-3 py-2 text-xs font-semibold transition cursor-pointer ${
+                                isParentActive
+                                  ? "text-[#cc0000] bg-[#cc0000]/10"
+                                  : isChildActive
+                                  ? "text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                                  : "text-foreground hover:bg-accent"
+                              }`}
+                            >
+                              <span>{cat.name}</span>
+                              {hasChildren && (
+                                <span className="text-[10px] text-muted-foreground font-normal">
+                                  {cat.children.length} sub
+                                </span>
+                              )}
+                            </button>
+
+                            {hasChildren && (
+                              <div className="bg-background/60 px-2 py-1 space-y-0.5 border-t border-border/20">
+                                {cat.children.map((sub) => {
+                                  const isSubActive = activeCategory === sub.name;
+                                  return (
+                                    <button
+                                      key={sub.id}
+                                      onClick={() => handleCategorySelect(sub.name)}
+                                      className={`w-full text-left rounded-md px-2.5 py-1 text-[11px] transition flex items-center gap-2 cursor-pointer ${
+                                        isSubActive
+                                          ? "font-bold text-[#cc0000] bg-[#cc0000]/10"
+                                          : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                                      }`}
+                                    >
+                                      <span className="h-1 w-1 rounded-full bg-amber-500/70" />
+                                      {sub.name}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </nav>
 
         <div className="flex items-center gap-1">
