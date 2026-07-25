@@ -53,7 +53,7 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
     };
 
     if (paymentMethod === "credit") {
-      data.installments = installments;
+      data.installments = subtotalValue >= 100 ? Math.min(installments, 3) : 1;
     }
 
     if (paymentMethod === "money" && needsChange) {
@@ -183,18 +183,32 @@ export function CheckoutForm({ neighborhoods, subtotal, onFinish }: CheckoutForm
       {paymentMethod === "credit" && (
         <div className="space-y-3">
           <Label htmlFor="installments">Parcelamento</Label>
-          <Select value={String(installments)} onValueChange={(value) => setInstallments(Number(value))}>
-            <SelectTrigger id="installments">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <SelectItem key={i} value={String(i)}>
-                  {i}x
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {subtotalValue < 100 ? (
+            <div className="space-y-2">
+              <div className="rounded-md border bg-muted/40 px-3 py-2.5 text-sm font-medium text-slate-800">
+                1x de {formatCurrency(total)} (à vista)
+              </div>
+              <p className="text-xs text-amber-900 bg-amber-50 border border-amber-300/80 rounded-lg p-2.5 leading-relaxed">
+                ℹ️ Parcelamento em até <strong>3x</strong> disponível apenas para compras a partir de <strong>R$ 100,00</strong>.
+              </p>
+            </div>
+          ) : (
+            <Select
+              value={String(Math.min(installments, 3))}
+              onValueChange={(value) => setInstallments(Number(value))}
+            >
+              <SelectTrigger id="installments">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3].map((i) => (
+                  <SelectItem key={i} value={String(i)}>
+                    {i}x de {formatCurrency(total / i)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
 

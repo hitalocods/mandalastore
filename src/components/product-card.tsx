@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +11,31 @@ import type { Product } from "@/types/product";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
+
+  const availableSizes = useMemo(() => {
+    if (!product.sizes) return [];
+    return product.sizes
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [product.sizes]);
+
+  const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0] || "");
+
+  const handleAddToCart = () => {
+    if (availableSizes.length > 0 && !selectedSize) {
+      toast.error("Selecione um tamanho antes de adicionar");
+      return;
+    }
+
+    if (availableSizes.length > 0 && selectedSize) {
+      addItem(product, selectedSize);
+      toast.success(`Produto adicionado (Tamanho: ${selectedSize})`);
+    } else {
+      addItem(product);
+      toast.success("Produto adicionado");
+    }
+  };
 
   return (
     <motion.article
@@ -46,6 +72,29 @@ export function ProductCard({ product }: { product: Product }) {
             {product.description || "Selecao premium STORE."}
           </p>
         </div>
+
+        {availableSizes.length > 0 && (
+          <div className="space-y-1 pt-0.5">
+            <p className="text-[10px] font-bold text-[#cc0000] uppercase tracking-wider">Tamanho:</p>
+            <div className="flex flex-wrap gap-1">
+              {availableSizes.map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => setSelectedSize(sz)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-bold border transition cursor-pointer select-none ${
+                    selectedSize === sz
+                      ? "bg-[#cc0000] text-white border-[#cc0000] shadow-xs"
+                      : "bg-background text-foreground border-border hover:border-foreground/40"
+                  }`}
+                >
+                  {sz}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-3 sm:flex sm:items-end sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <p className="truncate text-[15px] font-semibold tracking-tight text-black sm:text-lg">{formatCurrency(product.price)}</p>
@@ -54,10 +103,7 @@ export function ProductCard({ product }: { product: Product }) {
             size="sm"
             variant="outline"
             className="h-9 w-full rounded-full px-2 text-xs sm:w-auto sm:px-3 sm:text-sm"
-            onClick={() => {
-              addItem(product);
-              toast.success("Produto adicionado");
-            }}
+            onClick={handleAddToCart}
             disabled={product.stock <= 0}
           >
             <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

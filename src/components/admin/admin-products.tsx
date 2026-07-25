@@ -90,6 +90,11 @@ export function AdminProducts({
                   <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">
                     <Tag className="h-3 w-3 text-amber-600" /> {product.category}
                   </span>
+                  {product.sizes && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700 border border-slate-200">
+                      Tam: {product.sizes}
+                    </span>
+                  )}
                 </div>
                 {product.description && (
                   <p className="line-clamp-1 text-xs text-slate-500">{product.description}</p>

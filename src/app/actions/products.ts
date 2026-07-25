@@ -25,6 +25,11 @@ function getCategory(formData: FormData): string {
   return toCanonicalCategory(category) || category || "Acessórios";
 }
 
+function getSizes(formData: FormData): string | null {
+  const sizes = String(formData.get("sizes") || "").trim();
+  return sizes || null;
+}
+
 async function uploadImage(file: File | null) {
   if (!file || file.size === 0) {
     return null;
@@ -39,10 +44,12 @@ async function uploadImage(file: File | null) {
 
 export async function createProduct(formData: FormData) {
   await assertAdmin();
+  await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT;`;
   const imageUrl = await uploadImage(formData.get("image") as File | null);
+  const sizes = getSizes(formData);
 
   await sql`
-    INSERT INTO products (id, name, description, price, category, stock, image_url)
+    INSERT INTO products (id, name, description, price, category, stock, image_url, sizes)
     VALUES (
       ${crypto.randomUUID()},
       ${String(formData.get("name") || "")},
@@ -50,7 +57,8 @@ export async function createProduct(formData: FormData) {
       ${getNumber(formData, "price")},
       ${getCategory(formData)},
       ${Math.max(0, Math.round(getNumber(formData, "stock")))},
-      ${imageUrl}
+      ${imageUrl},
+      ${sizes}
     )
   `;
 
@@ -60,9 +68,11 @@ export async function createProduct(formData: FormData) {
 
 export async function updateProduct(formData: FormData) {
   await assertAdmin();
+  await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT;`;
   const id = String(formData.get("id") || "");
   const currentImage = String(formData.get("current_image_url") || "");
   const imageUrl = (await uploadImage(formData.get("image") as File | null)) || currentImage || null;
+  const sizes = getSizes(formData);
 
   await sql`
     UPDATE products
@@ -72,7 +82,8 @@ export async function updateProduct(formData: FormData) {
       price = ${getNumber(formData, "price")},
       category = ${getCategory(formData)},
       stock = ${Math.max(0, Math.round(getNumber(formData, "stock")))},
-      image_url = ${imageUrl}
+      image_url = ${imageUrl},
+      sizes = ${sizes}
     WHERE id = ${id}
   `;
 

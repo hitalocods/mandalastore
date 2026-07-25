@@ -42,7 +42,30 @@ export function ProductForm({
   }, [availableCategories]);
 
   const [category, setCategory] = useState(product?.category || uniqueCategories[0] || "Acessórios");
+  const [sizes, setSizes] = useState<string>(product?.sizes || "");
   const [isPending, startTransition] = useTransition();
+
+  const presetSizes = ["PP", "P", "M", "G", "GG", "XG", "EXG", "36", "38", "40", "42", "44", "Único"];
+
+  const togglePresetSize = (sizeTag: string) => {
+    const currentList = sizes
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (currentList.includes(sizeTag)) {
+      setSizes(currentList.filter((s) => s !== sizeTag).join(", "));
+    } else {
+      setSizes([...currentList, sizeTag].join(", "));
+    }
+  };
+
+  const isSizeSelected = (sizeTag: string) => {
+    const currentList = sizes
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return currentList.includes(sizeTag);
+  };
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -195,6 +218,38 @@ export function ProductForm({
             </option>
           ))}
         </select>
+      </div>
+      <div className="grid gap-1.5">
+        <Label className="text-xs font-semibold text-slate-700">Tamanhos Disponíveis (Opcional / Roupas)</Label>
+        <div className="flex flex-wrap gap-1.5 pb-1">
+          {presetSizes.map((sz) => {
+            const selected = isSizeSelected(sz);
+            return (
+              <button
+                key={sz}
+                type="button"
+                onClick={() => togglePresetSize(sz)}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[11px] font-semibold border transition cursor-pointer select-none",
+                  selected
+                    ? "bg-amber-500 text-white border-amber-600 shadow-2xs"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
+                )}
+              >
+                {sz}
+              </button>
+            );
+          })}
+        </div>
+        <Input
+          id={product ? `sizes-${product.id}` : "sizes"}
+          name="sizes"
+          value={sizes}
+          onChange={(e) => setSizes(e.target.value)}
+          placeholder="Ex: P, M, G, GG ou 38, 40, 42"
+          className="bg-white border-slate-200 text-slate-900 text-xs focus:border-amber-500"
+        />
+        <p className="text-[10px] text-slate-400">Clique nos atalhos acima ou digite os tamanhos separados por vírgula.</p>
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor={product ? `image-${product.id}` : "image"} className="text-xs font-semibold text-slate-700">

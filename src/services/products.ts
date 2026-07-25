@@ -7,6 +7,8 @@ export async function getProducts(): Promise<Product[]> {
   noStore();
 
   try {
+    await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT;`;
+
     const products = await sql`
       SELECT * FROM products
       ORDER BY created_at DESC
@@ -17,6 +19,7 @@ export async function getProducts(): Promise<Product[]> {
       price: Number(product.price) || 0,
       stock: Number(product.stock) || 0,
       category: toCanonicalCategory(product.category) || product.category,
+      sizes: product.sizes || null,
     }));
 
     return normalizedProducts;

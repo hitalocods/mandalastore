@@ -3,6 +3,8 @@ import { getActiveNeighborhoods } from "@/services/neighborhoods";
 import { getCategories } from "@/services/categories";
 import { Storefront } from "@/components/storefront";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const products = await getProducts();
   const neighborhoods = await getActiveNeighborhoods();

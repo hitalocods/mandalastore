@@ -8,9 +8,9 @@ type CartContextValue = {
   items: CartItem[];
   count: number;
   subtotal: number;
-  addItem: (product: Product) => void;
-  removeItem: (productId: string) => void;
-  setQuantity: (productId: string, quantity: number) => void;
+  addItem: (product: Product, selectedSize?: string) => void;
+  removeItem: (itemId: string) => void;
+  setQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
 };
 
@@ -23,7 +23,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const raw = window.localStorage.getItem(storageKey);
     if (raw) {
-      setItems(JSON.parse(raw) as CartItem[]);
+      try {
+        const parsed = JSON.parse(raw) as CartItem[];
+        const normalized = parsed.map((item) => ({
+          ...item,
+          id: item.id || (item.selectedSize ? `${item.product.id}-${item.selectedSize}` : item.product.id),
+        }));
+        setItems(normalized);
+      } catch {
+        setItems([]);
+      }
     }
   }, []);
 
@@ -31,30 +40,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(storageKey, JSON.stringify(items));
   }, [items]);
 
-  const addItem = useCallback((product: Product) => {
+  const addItem = useCallback((product: Product, selectedSize?: string) => {
     setItems((current) => {
-      const existing = current.find((item) => item.product.id === product.id);
+      const itemId = selectedSize ? `${product.id}-${selectedSize}` : product.id;
+      const existing = current.find((item) => item.id === itemId || (item.product.id === product.id && item.selectedSize === selectedSize));
+      
       if (existing) {
         return current.map((item) =>
-          item.product.id === product.id
+          (item.id === itemId || (item.product.id === product.id && item.selectedSize === selectedSize))
             ? { ...item, quantity: Math.min(item.quantity + 1, product.stock || 99) }
             : item,
         );
       }
 
-      return [...current, { product, quantity: 1 }];
+      return [...current, { id: itemId, product, quantity: 1, selectedSize }];
     });
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setItems((current) => current.filter((item) => item.product.id !== productId));
+  const removeItem = useCallback((itemId: string) => {
+    setItems((current) => current.filter((item) => item.id !== itemId && item.product.id !== itemId));
   }, []);
 
-  const setQuantity = useCallback((productId: string, quantity: number) => {
+  const setQuantity = useCallback((itemId: string, quantity: number) => {
     setItems((current) =>
       current
         .map((item) =>
-          item.product.id === productId
+          (item.id === itemId || item.product.id === itemId)
             ? { ...item, quantity: Math.max(1, Math.min(quantity, item.product.stock || 99)) }
             : item,
         )
