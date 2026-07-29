@@ -8,5 +8,5 @@ export type Category = {
 };
 
 export type CategoryWithChildren = Category & {
-  children: Category[];
+  children: CategoryWithChildren[];
 };
