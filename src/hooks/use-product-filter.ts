@@ -12,23 +12,48 @@ export function useProductFilter(products: Product[], categoriesTree: CategoryWi
       return products;
     }
 
-    // Check if selected category is a parent category with children
-    const matchingParent = categoriesTree.find(
-      (c) => c.name.toLowerCase() === activeCategory.toLowerCase()
-    );
+    const activeCatLower = activeCategory.trim().toLowerCase();
 
-    if (matchingParent && matchingParent.children && matchingParent.children.length > 0) {
-      const childNames = matchingParent.children.map((c) => c.name.toLowerCase());
-      childNames.push(matchingParent.name.toLowerCase());
+    const findCategory = (nodes: CategoryWithChildren[]): CategoryWithChildren | undefined => {
+      for (const node of nodes) {
+        if (node.name.trim().toLowerCase() === activeCatLower) {
+          return node;
+        }
+        if (node.children && node.children.length > 0) {
+          const found = findCategory(node.children);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
 
-      return products.filter((product) =>
-        childNames.includes(product.category.toLowerCase())
-      );
+    const matchingCategory = findCategory(categoriesTree);
+
+    if (matchingCategory && matchingCategory.children && matchingCategory.children.length > 0) {
+      const allowedNames = [
+        matchingCategory.name.trim().toLowerCase(),
+        ...matchingCategory.children.map((c) => c.name.trim().toLowerCase()),
+      ];
+
+      return products.filter((product) => {
+        const prodCatLower = product.category.trim().toLowerCase();
+        return (
+          allowedNames.includes(prodCatLower) ||
+          allowedNames.some(
+            (name) => prodCatLower === name + "s" || name === prodCatLower + "s"
+          )
+        );
+      });
     }
 
-    return products.filter(
-      (product) => product.category.toLowerCase() === activeCategory.toLowerCase()
-    );
+    return products.filter((product) => {
+      const prodCatLower = product.category.trim().toLowerCase();
+      return (
+        prodCatLower === activeCatLower ||
+        prodCatLower === activeCatLower + "s" ||
+        activeCatLower === prodCatLower + "s"
+      );
+    });
   }, [activeCategory, products, categoriesTree]);
 
   return {

@@ -5,8 +5,6 @@ import { redirect } from "next/navigation";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { uploadImageToBlob } from "@/lib/blob";
 import { sql } from "@/lib/db";
-import { toCanonicalCategory } from "@/lib/utils";
-
 async function assertAdmin() {
   const isAdmin = await isAdminAuthenticated();
 
@@ -22,7 +20,7 @@ function getNumber(formData: FormData, key: string) {
 
 function getCategory(formData: FormData): string {
   const category = String(formData.get("category") || "").trim();
-  return toCanonicalCategory(category) || category || "Acessórios";
+  return category || "Acessórios";
 }
 
 function getSizes(formData: FormData): string | null {

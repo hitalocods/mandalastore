@@ -24,9 +24,15 @@ export function AdminProducts({
 
   const filteredProducts = useMemo(() => {
     const search = query.trim().toLowerCase();
+    const catLower = category.trim().toLowerCase();
 
     return products.filter((product) => {
-      const matchesCategory = category === "Todos" || product.category === category;
+      const prodCatLower = product.category.trim().toLowerCase();
+      const matchesCategory =
+        category === "Todos" ||
+        prodCatLower === catLower ||
+        prodCatLower === catLower + "s" ||
+        catLower === prodCatLower + "s";
       const matchesQuery = !search || product.name.toLowerCase().includes(search);
 
       return matchesCategory && matchesQuery;

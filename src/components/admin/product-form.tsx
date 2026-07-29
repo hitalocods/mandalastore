@@ -35,14 +35,25 @@ export function ProductForm({
   availableCategories?: readonly string[];
   onSuccess?: () => void;
 }) {
-  // Deduplicate category list to avoid duplicate keys
+  // Deduplicate category list to avoid duplicate keys and guarantee product.category is in options
   const uniqueCategories = useMemo(() => {
     const list = Array.from(new Set(availableCategories));
+    if (product?.category && !list.includes(product.category)) {
+      list.push(product.category);
+    }
     return list.length > 0 ? list : Array.from(defaultCategories);
-  }, [availableCategories]);
+  }, [availableCategories, product?.category]);
 
   const [category, setCategory] = useState(product?.category || uniqueCategories[0] || "Acessórios");
   const [sizes, setSizes] = useState<string>(product?.sizes || "");
+
+  useEffect(() => {
+    if (product) {
+      setCategory(product.category);
+      setSizes(product.sizes || "");
+    }
+  }, [product]);
+
   const [isPending, startTransition] = useTransition();
 
   const presetSizes = ["PP", "P", "M", "G", "GG", "XG", "EXG", "36", "38", "40", "42", "44", "Único"];
