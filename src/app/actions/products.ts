@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isAdminAuthenticated } from "@/lib/auth";
-import { uploadImageToBlob } from "@/lib/blob";
+import { uploadImageToCloudinary, deleteImageFromCloudinary } from "@/lib/cloudinary";
 import { sql } from "@/lib/db";
+
 async function assertAdmin() {
   const isAdmin = await isAdminAuthenticated();
 
@@ -37,7 +38,7 @@ async function uploadImage(file: File | null) {
   const fileName = `${crypto.randomUUID()}.${extension}`;
   const renamedFile = new File([file], fileName, { type: file.type });
 
-  return await uploadImageToBlob(renamedFile);
+  return await uploadImageToCloudinary(renamedFile);
 }
 
 export async function createProduct(formData: FormData) {
@@ -69,7 +70,20 @@ export async function updateProduct(formData: FormData) {
   await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT;`;
   const id = String(formData.get("id") || "");
   const currentImage = String(formData.get("current_image_url") || "");
-  const imageUrl = (await uploadImage(formData.get("image") as File | null)) || currentImage || null;
+  const imageFile = formData.get("image") as File | null;
+
+  let imageUrl = currentImage || null;
+
+  if (imageFile && imageFile.size > 0) {
+    const uploadedUrl = await uploadImage(imageFile);
+    if (uploadedUrl) {
+      imageUrl = uploadedUrl;
+      if (currentImage) {
+        await deleteImageFromCloudinary(currentImage);
+      }
+    }
+  }
+
   const sizes = getSizes(formData);
 
   await sql`
@@ -92,6 +106,18 @@ export async function updateProduct(formData: FormData) {
 export async function deleteProduct(formData: FormData) {
   await assertAdmin();
   const id = String(formData.get("id") || "");
+
+  try {
+    const result = await sql`
+      SELECT image_url FROM products WHERE id = ${id}
+    `;
+
+    if (result.length > 0 && result[0].image_url) {
+      await deleteImageFromCloudinary(result[0].image_url as string);
+    }
+  } catch (err) {
+    console.error("Erro ao buscar imagem para exclusão:", err);
+  }
 
   await sql`
     DELETE FROM products
