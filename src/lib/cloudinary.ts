@@ -15,10 +15,14 @@ export async function uploadImageToCloudinary(file: File): Promise<string> {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: "mandala-prime/products",
-        fetch_format: "auto",
-        quality: "auto:good",
-        width: 1200,
-        crop: "limit",
+        transformation: [
+          {
+            width: 1200,
+            crop: "limit",
+            quality: "auto",
+            fetch_format: "auto",
+          },
+        ],
       },
       (error, result: UploadApiResponse | undefined) => {
         if (error || !result) {
