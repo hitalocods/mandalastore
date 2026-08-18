@@ -12,7 +12,6 @@ import {
   Store,
 } from "lucide-react";
 import { signOutAdmin } from "@/app/actions/auth";
-import { StorageLimitAlert } from "@/components/admin/storage-limit-alert";
 import { ProductForm } from "@/components/admin/product-form";
 import { AdminProducts } from "@/components/admin/admin-products";
 import { CategoryManager } from "@/components/admin/category-manager";
@@ -96,8 +95,6 @@ export default async function AdminPage() {
 
       {/* Main Content Area */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-        {/* Storage / Quota Limit Alert */}
-        <StorageLimitAlert />
 
         {/* KPI Dashboard Grid */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
