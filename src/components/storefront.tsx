@@ -34,33 +34,71 @@ export function Storefront({
         activeCategory={activeCategory}
         onSelectCategory={setActiveCategory}
       />
-      <main className="min-h-screen bg-background">
-        <section className="mx-auto grid max-w-7xl gap-6 px-3 pb-6 pt-7 sm:px-6 sm:pb-12 sm:pt-14 lg:grid-cols-[0.95fr_1.05fr] lg:px-8 lg:pb-20 lg:pt-20">
-          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-            <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-foreground/70 sm:mb-4 sm:text-xs">
-              Acessórios premium
-            </p>
+      <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#fdf3f3] via-[#fff9f8] to-[#faf8f7]">
+        {/* Soft atmospheric gradient glow at the top / hero */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[550px] bg-[radial-gradient(ellipse_at_top,rgba(204,0,0,0.11),rgba(212,175,55,0.05)_45%,transparent_75%)] blur-3xl -z-10"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-10 right-[-10%] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(204,0,0,0.06),transparent_70%)] blur-3xl -z-10"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-40 left-[-10%] w-[450px] h-[450px] bg-[radial-gradient(circle,rgba(212,175,55,0.06),transparent_70%)] blur-3xl -z-10"
+        />
+
+        <section className="mx-auto grid max-w-7xl items-center gap-8 px-3 pb-8 pt-6 sm:px-6 sm:pb-12 sm:pt-10 lg:grid-cols-[1fr_1.15fr] lg:gap-12 lg:px-8 lg:pb-16 lg:pt-14">
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex flex-col justify-center">
+            <div className="inline-flex items-center gap-2 mb-3 sm:mb-4">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#cc0000] animate-pulse" />
+              <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-foreground/75 sm:text-xs">
+                Acessórios & Coleção Premium
+              </p>
+            </div>
             <h1 className="max-w-2xl bg-gradient-to-r from-[#cc0000] via-[#e63946] to-[#d4af37] bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-6xl lg:text-7xl">
               Mandalla Prime
             </h1>
-            <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground sm:mt-5 sm:text-base sm:leading-7">
-              Capas, acessórios, roupas, artigos religiosos e muito mais.
+            <p className="mt-3.5 max-w-lg text-sm leading-relaxed text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
+              Capas, acessórios, roupas, artigos religiosos e muito mais com a máxima qualidade e estilo.
             </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">
+              <a
+                href="#products"
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#cc0000] to-[#b30000] px-5 py-2.5 text-xs font-semibold text-white shadow-md shadow-[#cc0000]/20 hover:brightness-110 transition sm:text-sm"
+              >
+                Explorar Catálogo
+              </a>
+              <a
+                href="#categories"
+                className="inline-flex items-center justify-center rounded-full border border-border bg-background/80 px-5 py-2.5 text-xs font-semibold text-foreground hover:border-amber-500/40 hover:text-amber-600 transition sm:text-sm"
+              >
+                Ver Categorias
+              </a>
+            </div>
           </motion.div>
           <motion.div
             initial={false}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.55, delay: 0.08 }}
-            className="flex items-center justify-center"
+            className="relative flex items-center justify-center"
           >
-            <Image
-              src="/logo-mandala.jpg"
-              alt="Mandalla Prime"
-              width={600}
-              height={900}
-              className="w-full max-w-[340px] sm:max-w-md h-auto rounded-2xl shadow-2xl object-cover border border-amber-500/30"
-              priority
+            {/* Ambient background glow */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-2 sm:-inset-4 rounded-3xl bg-gradient-to-tr from-[#cc0000]/15 via-amber-500/15 to-transparent blur-2xl -z-10"
             />
+            <div className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-500/30 bg-black/5 shadow-xl sm:shadow-2xl ring-1 ring-amber-500/20">
+              <Image
+                src="/banner.jpeg"
+                alt="Mandalla Prime"
+                width={1600}
+                height={900}
+                className="w-full h-auto aspect-video object-cover transition-transform duration-500 hover:scale-[1.02]"
+                priority
+              />
+            </div>
           </motion.div>
         </section>
 
