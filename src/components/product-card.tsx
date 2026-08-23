@@ -20,7 +20,16 @@ export function ProductCard({ product }: { product: Product }) {
       .filter(Boolean);
   }, [product.sizes]);
 
+  const availableColors = useMemo(() => {
+    if (!product.colors) return [];
+    return product.colors
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
+  }, [product.colors]);
+
   const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0] || "");
+  const [selectedColor, setSelectedColor] = useState<string>(availableColors[0] || "");
 
   const handleAddToCart = () => {
     if (availableSizes.length > 0 && !selectedSize) {
@@ -28,11 +37,23 @@ export function ProductCard({ product }: { product: Product }) {
       return;
     }
 
-    if (availableSizes.length > 0 && selectedSize) {
-      addItem(product, selectedSize);
-      toast.success(`Produto adicionado (Tamanho: ${selectedSize})`);
+    if (availableColors.length > 0 && !selectedColor) {
+      toast.error("Selecione uma cor antes de adicionar");
+      return;
+    }
+
+    const size = availableSizes.length > 0 ? selectedSize : undefined;
+    const color = availableColors.length > 0 ? selectedColor : undefined;
+
+    addItem(product, size, color);
+
+    const details: string[] = [];
+    if (size) details.push(`Tam: ${size}`);
+    if (color) details.push(`Cor: ${color}`);
+
+    if (details.length > 0) {
+      toast.success(`Produto adicionado (${details.join(", ")})`);
     } else {
-      addItem(product);
       toast.success("Produto adicionado");
     }
   };
@@ -89,6 +110,28 @@ export function ProductCard({ product }: { product: Product }) {
                   }`}
                 >
                   {sz}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {availableColors.length > 0 && (
+          <div className="space-y-1 pt-0.5">
+            <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Cor:</p>
+            <div className="flex flex-wrap gap-1">
+              {availableColors.map((cl) => (
+                <button
+                  key={cl}
+                  type="button"
+                  onClick={() => setSelectedColor(cl)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium border transition cursor-pointer select-none ${
+                    selectedColor === cl
+                      ? "bg-[#cc0000] text-white border-[#cc0000] shadow-xs font-semibold"
+                      : "bg-background text-foreground border-border hover:border-foreground/40"
+                  }`}
+                >
+                  {cl}
                 </button>
               ))}
             </div>

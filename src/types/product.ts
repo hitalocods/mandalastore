@@ -32,6 +32,7 @@ export type Product = {
   stock: number;
   image_url: string | null;
   sizes?: string | null;
+  colors?: string | null;
   is_premium?: boolean;
   is_available?: boolean;
   created_at: string;

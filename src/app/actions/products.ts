@@ -29,6 +29,11 @@ function getSizes(formData: FormData): string | null {
   return sizes || null;
 }
 
+function getColors(formData: FormData): string | null {
+  const colors = String(formData.get("colors") || "").trim();
+  return colors || null;
+}
+
 async function uploadImage(file: File | null) {
   if (!file || file.size === 0) {
     return null;
@@ -44,11 +49,13 @@ async function uploadImage(file: File | null) {
 export async function createProduct(formData: FormData) {
   await assertAdmin();
   await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT;`;
+  await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS colors TEXT;`;
   const imageUrl = await uploadImage(formData.get("image") as File | null);
   const sizes = getSizes(formData);
+  const colors = getColors(formData);
 
   await sql`
-    INSERT INTO products (id, name, description, price, category, stock, image_url, sizes)
+    INSERT INTO products (id, name, description, price, category, stock, image_url, sizes, colors)
     VALUES (
       ${crypto.randomUUID()},
       ${String(formData.get("name") || "")},
@@ -57,7 +64,8 @@ export async function createProduct(formData: FormData) {
       ${getCategory(formData)},
       ${Math.max(0, Math.round(getNumber(formData, "stock")))},
       ${imageUrl},
-      ${sizes}
+      ${sizes},
+      ${colors}
     )
   `;
 
@@ -68,6 +76,7 @@ export async function createProduct(formData: FormData) {
 export async function updateProduct(formData: FormData) {
   await assertAdmin();
   await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT;`;
+  await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS colors TEXT;`;
   const id = String(formData.get("id") || "");
   const currentImage = String(formData.get("current_image_url") || "");
   const imageFile = formData.get("image") as File | null;
@@ -85,6 +94,7 @@ export async function updateProduct(formData: FormData) {
   }
 
   const sizes = getSizes(formData);
+  const colors = getColors(formData);
 
   await sql`
     UPDATE products
@@ -95,7 +105,8 @@ export async function updateProduct(formData: FormData) {
       category = ${getCategory(formData)},
       stock = ${Math.max(0, Math.round(getNumber(formData, "stock")))},
       image_url = ${imageUrl},
-      sizes = ${sizes}
+      sizes = ${sizes},
+      colors = ${colors}
     WHERE id = ${id}
   `;
 

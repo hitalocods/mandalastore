@@ -101,6 +101,11 @@ export function AdminProducts({
                       Tam: {product.sizes}
                     </span>
                   )}
+                  {product.colors && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-800 border border-rose-200">
+                      Cores: {product.colors}
+                    </span>
+                  )}
                 </div>
                 {product.description && (
                   <p className="line-clamp-1 text-xs text-slate-500">{product.description}</p>

@@ -41,8 +41,11 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
     let message = `🛒 NOVO PEDIDO\n\n--------------------------------\n\nTipo:\n${deliveryTypeText}\n\n--------------------------------\n\nCliente\n\nNome:\n${data.fullName}\n\nWhatsApp:\n${data.whatsapp}\n\n--------------------------------\n\nItens\n\n`;
 
     items.forEach((item) => {
-      const sizeText = item.selectedSize ? ` (Tamanho: ${item.selectedSize})` : "";
-      message += `${item.quantity}x ${item.product.name}${sizeText}\n`;
+      const details: string[] = [];
+      if (item.selectedSize) details.push(`Tamanho: ${item.selectedSize}`);
+      if (item.selectedColor) details.push(`Cor: ${item.selectedColor}`);
+      const detailsText = details.length > 0 ? ` (${details.join(", ")})` : "";
+      message += `${item.quantity}x ${item.product.name}${detailsText}\n`;
     });
 
     message += `\n--------------------------------\n\nSubtotal\n\n${formatCurrency(subtotal)}\n\n`;
@@ -118,11 +121,18 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
                     <div className="flex gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-black">{item.product.name}</p>
-                        {item.selectedSize && (
-                          <span className="inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300/60 mt-0.5">
-                            Tamanho: {item.selectedSize}
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {item.selectedSize && (
+                            <span className="inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300/60">
+                              Tamanho: {item.selectedSize}
+                            </span>
+                          )}
+                          {item.selectedColor && (
+                            <span className="inline-block rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-900 border border-rose-200">
+                              Cor: {item.selectedColor}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-black mt-0.5">{formatCurrency(item.product.price)}</p>
                       </div>
                       <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50" onClick={() => removeItem(item.id)}>

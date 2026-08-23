@@ -4,11 +4,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { CartItem } from "@/types/cart";
 import type { Product } from "@/types/product";
 
+function getCartItemId(productId: string, selectedSize?: string, selectedColor?: string): string {
+  const parts = [productId];
+  if (selectedSize) parts.push(`sz:${selectedSize}`);
+  if (selectedColor) parts.push(`cl:${selectedColor}`);
+  return parts.join("-");
+}
+
 type CartContextValue = {
   items: CartItem[];
   count: number;
   subtotal: number;
-  addItem: (product: Product, selectedSize?: string) => void;
+  addItem: (product: Product, selectedSize?: string, selectedColor?: string) => void;
   removeItem: (itemId: string) => void;
   setQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -27,7 +34,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(raw) as CartItem[];
         const normalized = parsed.map((item) => ({
           ...item,
-          id: item.id || (item.selectedSize ? `${item.product.id}-${item.selectedSize}` : item.product.id),
+          id: item.id || getCartItemId(item.product.id, item.selectedSize, item.selectedColor),
         }));
         setItems(normalized);
       } catch {
@@ -40,20 +47,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(storageKey, JSON.stringify(items));
   }, [items]);
 
-  const addItem = useCallback((product: Product, selectedSize?: string) => {
+  const addItem = useCallback((product: Product, selectedSize?: string, selectedColor?: string) => {
     setItems((current) => {
-      const itemId = selectedSize ? `${product.id}-${selectedSize}` : product.id;
-      const existing = current.find((item) => item.id === itemId || (item.product.id === product.id && item.selectedSize === selectedSize));
+      const itemId = getCartItemId(product.id, selectedSize, selectedColor);
+      const existing = current.find(
+        (item) =>
+          item.id === itemId ||
+          (item.product.id === product.id &&
+            item.selectedSize === selectedSize &&
+            item.selectedColor === selectedColor),
+      );
       
       if (existing) {
         return current.map((item) =>
-          (item.id === itemId || (item.product.id === product.id && item.selectedSize === selectedSize))
+          (item.id === itemId ||
+          (item.product.id === product.id &&
+            item.selectedSize === selectedSize &&
+            item.selectedColor === selectedColor))
             ? { ...item, quantity: Math.min(item.quantity + 1, product.stock || 99) }
             : item,
         );
       }
 
-      return [...current, { id: itemId, product, quantity: 1, selectedSize }];
+      return [...current, { id: itemId, product, quantity: 1, selectedSize, selectedColor }];
     });
   }, []);
 
