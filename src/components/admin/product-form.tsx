@@ -159,7 +159,6 @@ export function ProductForm({
 
     if (validated.length > 0) {
       setNewFiles((prev) => [...prev, ...validated]);
-      setImageError(null);
     }
 
     if (fileInputRef.current) {
