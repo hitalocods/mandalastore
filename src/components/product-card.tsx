@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronRight, Layers, Plus, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Layers, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
@@ -29,7 +29,18 @@ export function ProductCard({ product }: { product: Product }) {
       .filter(Boolean);
   }, [product.colors]);
 
+  const allImages = useMemo(() => {
+    if (product.images) {
+      const list = product.images.split(",").map((s) => s.trim()).filter(Boolean);
+      if (list.length > 0) return list;
+    }
+    return product.image_url ? [product.image_url] : [];
+  }, [product.images, product.image_url]);
+
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
   const hasOptions = availableSizes.length > 0 || availableColors.length > 0;
+  const hasMultipleImages = allImages.length > 1;
 
   const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0] || "");
   const [selectedColor, setSelectedColor] = useState<string>(availableColors[0] || "");
@@ -42,6 +53,11 @@ export function ProductCard({ product }: { product: Product }) {
 
     addItem(product);
     toast.success("Produto adicionado ao carrinho!");
+  };
+
+  const handleOpenModal = () => {
+    setActiveImageIndex(0);
+    setModalOpen(true);
   };
 
   const handleAddWithOptions = () => {
@@ -64,9 +80,15 @@ export function ProductCard({ product }: { product: Product }) {
     if (size) details.push(`Tam: ${size}`);
     if (color) details.push(`Cor: ${color}`);
 
-    toast.success(`Produto adicionado! (${details.join(" • ")})`);
+    if (details.length > 0) {
+      toast.success(`Produto adicionado! (${details.join(" • ")})`);
+    } else {
+      toast.success("Produto adicionado ao carrinho!");
+    }
     setModalOpen(false);
   };
+
+  const currentCoverImage = allImages[0] || product.image_url;
 
   return (
     <>
@@ -81,10 +103,13 @@ export function ProductCard({ product }: { product: Product }) {
       >
         <div>
           {/* Product Image */}
-          <div className="relative aspect-square overflow-hidden bg-slate-50">
-            {product.image_url ? (
+          <div
+            onClick={handleOpenModal}
+            className="relative aspect-square overflow-hidden bg-slate-50 cursor-pointer"
+          >
+            {currentCoverImage ? (
               <img
-                src={product.image_url}
+                src={currentCoverImage}
                 alt={product.name}
                 className="h-full w-full object-contain p-2 transition duration-500 group-hover:scale-105"
               />
@@ -94,10 +119,19 @@ export function ProductCard({ product }: { product: Product }) {
               </div>
             )}
 
-            {hasOptions && (
-              <div className="absolute top-2 left-2 rounded-full bg-black/75 px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur-xs flex items-center gap-1 shadow-xs">
-                <Layers className="h-2.5 w-2.5 text-amber-400" />
-                <span>Opções</span>
+            {/* Badges on card */}
+            <div className="absolute top-2 left-2 flex flex-col gap-1">
+              {hasOptions && (
+                <div className="rounded-full bg-black/75 px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur-xs flex items-center gap-1 shadow-xs">
+                  <Layers className="h-2.5 w-2.5 text-amber-400" />
+                  <span>Opções</span>
+                </div>
+              )}
+            </div>
+
+            {hasMultipleImages && (
+              <div className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-0.5 text-[9px] font-semibold text-white backdrop-blur-xs flex items-center gap-1 shadow-xs">
+                <span>{allImages.length} fotos</span>
               </div>
             )}
           </div>
@@ -107,7 +141,10 @@ export function ProductCard({ product }: { product: Product }) {
             <p className="truncate text-[9px] uppercase tracking-[0.16em] font-semibold text-muted-foreground sm:text-[10px]">
               {product.category}
             </p>
-            <h3 className="line-clamp-2 min-h-[2.5rem] text-xs font-semibold leading-snug tracking-tight text-slate-900 sm:text-sm">
+            <h3
+              onClick={handleOpenModal}
+              className="line-clamp-2 min-h-[2.5rem] text-xs font-semibold leading-snug tracking-tight text-slate-900 sm:text-sm hover:text-[#cc0000] transition cursor-pointer"
+            >
               {product.name}
             </h3>
             <p className="line-clamp-1 text-xs text-slate-500">
@@ -151,7 +188,7 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
       </motion.article>
 
-      {/* Quick Selection Modal for Variations */}
+      {/* Quick Selection & Image Gallery Modal */}
       <AnimatePresence>
         {modalOpen && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -170,40 +207,98 @@ export function ProductCard({ product }: { product: Product }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.96 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl z-10 max-h-[85vh] overflow-y-auto"
+              className="relative w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl z-10 max-h-[90vh] overflow-y-auto"
             >
               {/* Close Button */}
               <button
                 onClick={() => setModalOpen(false)}
-                className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
+                className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer z-10"
               >
                 <X className="h-5 w-5" />
               </button>
 
-              {/* Product Header in Modal */}
-              <div className="flex gap-3.5 pr-6 pb-4 border-b border-slate-100">
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-center">
-                  {product.image_url ? (
-                    <img src={product.image_url} alt="" className="h-full w-full object-contain p-1" />
+              {/* Gallery Image Display */}
+              <div className="space-y-2 pb-4 border-b border-slate-100">
+                <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-center">
+                  {allImages[activeImageIndex] ? (
+                    <img
+                      src={allImages[activeImageIndex]}
+                      alt={product.name}
+                      className="h-full w-full object-contain p-2"
+                    />
                   ) : (
                     <span className="text-xs font-bold text-slate-400">STORE</span>
                   )}
+
+                  {allImages.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveImageIndex((prev) =>
+                            prev === 0 ? allImages.length - 1 : prev - 1,
+                          )
+                        }
+                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 text-slate-700 shadow-md backdrop-blur-xs hover:bg-white transition cursor-pointer"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveImageIndex((prev) =>
+                            prev === allImages.length - 1 ? 0 : prev + 1,
+                          )
+                        }
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 text-slate-700 shadow-md backdrop-blur-xs hover:bg-white transition cursor-pointer"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
+
+                {/* Thumbnails strip */}
+                {allImages.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {allImages.map((imgUrl, idx) => (
+                      <button
+                        key={imgUrl}
+                        type="button"
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition cursor-pointer ${
+                          activeImageIndex === idx
+                            ? "border-[#cc0000] shadow-xs scale-105"
+                            : "border-slate-200 opacity-70 hover:opacity-100"
+                        }`}
+                      >
+                        <img src={imgUrl} alt="" className="h-full w-full object-contain p-0.5 bg-slate-50" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Product Title & Price */}
+                <div className="pt-2">
                   <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                     {product.category}
                   </p>
-                  <h4 className="font-bold text-slate-900 text-sm leading-snug truncate">
+                  <h4 className="font-bold text-slate-900 text-base leading-snug">
                     {product.name}
                   </h4>
-                  <p className="text-base font-extrabold text-[#cc0000] mt-0.5">
+                  {product.description && (
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      {product.description}
+                    </p>
+                  )}
+                  <p className="text-lg font-extrabold text-[#cc0000] mt-1.5">
                     {formatCurrency(product.price)}
                   </p>
                 </div>
               </div>
 
               {/* Variation Options */}
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 py-3">
                 {/* Size Selector */}
                 {availableSizes.length > 0 && (
                   <div className="space-y-2">

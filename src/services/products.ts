@@ -8,6 +8,7 @@ export async function getProducts(): Promise<Product[]> {
   try {
     await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT;`;
     await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS colors TEXT;`;
+    await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS images TEXT;`;
 
     const products = await sql`
       SELECT * FROM products
@@ -21,6 +22,7 @@ export async function getProducts(): Promise<Product[]> {
       category: product.category || "Acessórios",
       sizes: product.sizes || null,
       colors: product.colors || null,
+      images: product.images || null,
     }));
 
     return normalizedProducts;

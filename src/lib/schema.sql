@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS products (
   image_url TEXT,
   sizes TEXT,
   colors TEXT,
+  images TEXT,
   is_premium BOOLEAN NOT NULL DEFAULT FALSE,
   is_available BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

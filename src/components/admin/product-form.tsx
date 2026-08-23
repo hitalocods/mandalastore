@@ -117,73 +117,93 @@ export function ProductForm({
       .filter(Boolean);
     return currentList.includes(colorTag);
   };
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [imageError, setImageError] = useState<string | null>(null);
+  const initialExistingImages = useMemo(() => {
+    if (product?.images) {
+      return product.images.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+    return product?.image_url ? [product.image_url] : [];
+  }, [product?.images, product?.image_url]);
+
+  const [existingImages, setExistingImages] = useState<string[]>(initialExistingImages);
+  const [newFiles, setNewFiles] = useState<{ id: string; file: File; previewUrl: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const existingImageUrl = product?.image_url || null;
+
+  useEffect(() => {
+    setExistingImages(initialExistingImages);
+    setNewFiles([]);
+  }, [initialExistingImages]);
 
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      newFiles.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     };
-  }, [previewUrl]);
+  }, [newFiles]);
 
-  const shownImageUrl = previewUrl || existingImageUrl;
-  const showingExistingImage = !previewUrl && Boolean(existingImageUrl);
+  const handleFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    if (selected.length === 0) return;
 
-  const clearSelectedImage = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
+    const validated: { id: string; file: File; previewUrl: string }[] = [];
+    for (const file of selected) {
+      const err = isValidImage(file);
+      if (err) {
+        toast.error(`"${file.name}": ${err}`);
+        continue;
+      }
+      validated.push({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+      });
     }
 
-    setPreviewUrl(null);
-    setSelectedFileName(null);
-    setImageError(null);
+    if (validated.length > 0) {
+      setNewFiles((prev) => [...prev, ...validated]);
+      setImageError(null);
+    }
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
-
-    if (!file) {
-      clearSelectedImage();
-      return;
-    }
-
-    const validationError = isValidImage(file);
-    if (validationError) {
-      clearSelectedImage();
-      setImageError(validationError);
-      toast.error(validationError);
-      return;
-    }
-
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-
-    const nextPreview = URL.createObjectURL(file);
-    setPreviewUrl(nextPreview);
-    setSelectedFileName(file.name);
-    setImageError(null);
+  const removeExistingImage = (urlToRemove: string) => {
+    setExistingImages((prev) => prev.filter((u) => u !== urlToRemove));
   };
+
+  const removeNewFile = (idToRemove: string) => {
+    setNewFiles((prev) => {
+      const item = prev.find((i) => i.id === idToRemove);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((i) => i.id !== idToRemove);
+    });
+  };
+
+  const totalImagesCount = existingImages.length + newFiles.length;
 
   return (
     <form
       action={(formData) => {
         formData.set("category", category);
+        formData.set("sizes", sizes);
+        formData.set("colors", colors);
+        formData.set("existing_images", existingImages.join(","));
+
+        // Append all new files to formData
+        newFiles.forEach((item) => {
+          formData.append("images", item.file);
+        });
+
         startTransition(async () => {
           try {
             if (product) {
               await updateProduct(formData);
               toast.success("Produto atualizado com sucesso!");
             } else {
+              if (totalImagesCount === 0) {
+                toast.error("Por favor, adicione pelo menos uma foto para o produto.");
+                return;
+              }
               await createProduct(formData);
               toast.success("Produto cadastrado com sucesso!");
             }
@@ -196,10 +216,7 @@ export function ProductForm({
       className="space-y-4"
     >
       {product && (
-        <>
-          <input type="hidden" name="id" value={product.id} />
-          <input type="hidden" name="current_image_url" value={product.image_url || ""} />
-        </>
+        <input type="hidden" name="id" value={product.id} />
       )}
       <div className="grid gap-1.5">
         <Label htmlFor={product ? `name-${product.id}` : "name"} className="text-xs font-semibold text-slate-700">
@@ -334,76 +351,105 @@ export function ProductForm({
         />
         <p className="text-[10px] text-slate-400">Clique nos atalhos acima ou digite as cores separadas por vírgula.</p>
       </div>
+
+      {/* Multiple Images Upload & Gallery */}
       <div className="grid gap-1.5">
-        <Label htmlFor={product ? `image-${product.id}` : "image"} className="text-xs font-semibold text-slate-700">
-          Imagem do Produto
-        </Label>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div className="grid gap-3 sm:grid-cols-[100px_1fr]">
-            <div className="flex h-24 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
-              {shownImageUrl ? (
-                <img
-                  src={shownImageUrl}
-                  alt={selectedFileName || product?.name || "Pré-visualização da imagem"}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-1 px-2 text-center text-[10px] text-slate-400">
-                  <ImageIcon className="h-5 w-5 text-slate-400" />
-                  <span>Sem imagem</span>
-                </div>
-              )}
-            </div>
-            <div className="flex min-w-0 flex-col justify-between gap-2">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-medium text-slate-700 truncate max-w-[160px]">
-                    {selectedFileName || (showingExistingImage ? "Imagem cadastrada" : "Nenhum arquivo")}
-                  </span>
-                  {selectedFileName && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
-                      Novo
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-semibold text-slate-700">
+            Fotos do Produto ({totalImagesCount} {totalImagesCount === 1 ? "foto" : "fotos"})
+          </Label>
+          <span className="text-[10px] text-slate-400 font-medium">A 1ª foto é a capa principal</span>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+          {/* Thumbnails grid */}
+          {totalImagesCount > 0 ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+              {/* Existing Images */}
+              {existingImages.map((url, idx) => (
+                <div
+                  key={url}
+                  className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xs"
+                >
+                  <img src={url} alt={`Foto ${idx + 1}`} className="h-full w-full object-contain p-1" />
+                  {idx === 0 && (
+                    <span className="absolute top-1 left-1 rounded-sm bg-[#cc0000] px-1.5 py-0.5 text-[8px] font-bold text-white uppercase shadow-xs">
+                      Capa
                     </span>
                   )}
-                </div>
-                <p className="text-[10px] text-slate-400">JPG, PNG ou WEBP (Max: 5 MB).</p>
-                {imageError && <p className="text-[10px] text-rose-600 font-medium">{imageError}</p>}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <label
-                  className={cn(
-                    "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-100 shadow-2xs",
-                    isPending && "pointer-events-none opacity-60",
-                  )}
-                >
-                  <Upload className="h-3.5 w-3.5 text-amber-600" />
-                  {shownImageUrl ? "Trocar imagem" : "Escolher arquivo"}
-                  <Input
-                    ref={fileInputRef}
-                    id={product ? `image-${product.id}` : "image"}
-                    name="image"
-                    type="file"
-                    required={!product}
-                    accept=".jpg,.jpeg,.png,.webp"
-                    className="sr-only"
-                    onChange={handleFileChange}
-                  />
-                </label>
-                {selectedFileName && (
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    className="h-8 rounded-lg px-2 text-xs text-slate-500 hover:text-slate-800"
-                    onClick={clearSelectedImage}
+                    onClick={() => removeExistingImage(url)}
+                    className="absolute top-1 right-1 h-5 w-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-xs transition hover:bg-rose-700 cursor-pointer"
+                    title="Remover foto"
                   >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Newly selected files */}
+              {newFiles.map((item, idx) => {
+                const globalIndex = existingImages.length + idx;
+                return (
+                  <div
+                    key={item.id}
+                    className="group relative aspect-square overflow-hidden rounded-lg border border-amber-300 bg-amber-50/40 shadow-2xs"
+                  >
+                    <img src={item.previewUrl} alt={item.file.name} className="h-full w-full object-contain p-1" />
+                    {globalIndex === 0 ? (
+                      <span className="absolute top-1 left-1 rounded-sm bg-[#cc0000] px-1.5 py-0.5 text-[8px] font-bold text-white uppercase shadow-xs">
+                        Capa
+                      </span>
+                    ) : (
+                      <span className="absolute top-1 left-1 rounded-sm bg-amber-500 px-1.5 py-0.5 text-[8px] font-bold text-white uppercase shadow-xs">
+                        Nova
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeNewFile(item.id)}
+                      className="absolute top-1 right-1 h-5 w-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-xs transition hover:bg-rose-700 cursor-pointer"
+                      title="Remover foto"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-slate-400 gap-1.5">
+              <ImageIcon className="h-8 w-8 text-slate-300" />
+              <span>Nenhuma foto adicionada ainda</span>
+            </div>
+          )}
+
+          {/* Add Photos Button */}
+          <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+            <p className="text-[10px] text-slate-400">JPG, PNG ou WEBP (Máx: 5 MB cada).</p>
+            <label
+              className={cn(
+                "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 shadow-2xs",
+                isPending && "pointer-events-none opacity-60",
+              )}
+            >
+              <Upload className="h-3.5 w-3.5 text-amber-600" />
+              <span>+ Adicionar Fotos</span>
+              <Input
+                ref={fileInputRef}
+                id={product ? `images-${product.id}` : "images"}
+                type="file"
+                multiple
+                accept=".jpg,.jpeg,.png,.webp"
+                className="sr-only"
+                onChange={handleFilesChange}
+              />
+            </label>
           </div>
         </div>
       </div>
+
       <div className="pt-2">
         <Button
           disabled={isPending}
