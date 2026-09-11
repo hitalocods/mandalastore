@@ -41,11 +41,12 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
     let message = `🛒 NOVO PEDIDO\n\n--------------------------------\n\nTipo:\n${deliveryTypeText}\n\n--------------------------------\n\nCliente\n\nNome:\n${data.fullName}\n\nWhatsApp:\n${data.whatsapp}\n\n--------------------------------\n\nItens\n\n`;
 
     items.forEach((item) => {
+      const itemPrice = item.selectedPrice ?? item.product.price;
       const details: string[] = [];
       if (item.selectedSize) details.push(`Tamanho: ${item.selectedSize}`);
       if (item.selectedColor) details.push(`Cor: ${item.selectedColor}`);
       const detailsText = details.length > 0 ? ` (${details.join(", ")})` : "";
-      message += `${item.quantity}x ${item.product.name}${detailsText}\n`;
+      message += `${item.quantity}x ${item.product.name}${detailsText} — ${formatCurrency(itemPrice)} cada\n`;
     });
 
     message += `\n--------------------------------\n\nSubtotal\n\n${formatCurrency(subtotal)}\n\n`;
@@ -133,7 +134,7 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-black mt-0.5">{formatCurrency(item.product.price)}</p>
+                        <p className="text-xs text-black mt-0.5">{formatCurrency(item.selectedPrice ?? item.product.price)}</p>
                       </div>
                       <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50" onClick={() => removeItem(item.id)}>
                         <Trash2 className="h-4 w-4" />

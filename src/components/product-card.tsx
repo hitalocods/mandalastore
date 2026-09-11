@@ -6,6 +6,7 @@ import { Check, ChevronLeft, ChevronRight, Layers, Plus, X } from "lucide-react"
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { parseSizeVariants } from "@/lib/size-variants";
 import { useCart } from "@/store/cart-store";
 import type { Product } from "@/types/product";
 
@@ -13,13 +14,7 @@ export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const [modalOpen, setModalOpen] = useState(false);
 
-  const availableSizes = useMemo(() => {
-    if (!product.sizes) return [];
-    return product.sizes
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, [product.sizes]);
+  const sizeVariants = useMemo(() => parseSizeVariants(product.sizes), [product.sizes]);
 
   const availableColors = useMemo(() => {
     if (!product.colors) return [];
@@ -39,11 +34,19 @@ export function ProductCard({ product }: { product: Product }) {
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const hasOptions = availableSizes.length > 0 || availableColors.length > 0;
+  const hasOptions = sizeVariants.length > 0 || availableColors.length > 0;
   const hasMultipleImages = allImages.length > 1;
 
-  const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0] || "");
+  const [selectedSize, setSelectedSize] = useState<string>(sizeVariants[0]?.label || "");
   const [selectedColor, setSelectedColor] = useState<string>(availableColors[0] || "");
+
+  // Compute the effective price for the currently selected size
+  const selectedVariantPrice = useMemo(() => {
+    if (!selectedSize || sizeVariants.length === 0) return product.price;
+    const variant = sizeVariants.find((v) => v.label === selectedSize);
+    // If variant has price > 0 use it, otherwise fall back to product.price
+    return variant && variant.price > 0 ? variant.price : product.price;
+  }, [selectedSize, sizeVariants, product.price]);
 
   const handleCardButtonClick = () => {
     if (hasOptions) {
@@ -51,7 +54,7 @@ export function ProductCard({ product }: { product: Product }) {
       return;
     }
 
-    addItem(product);
+    addItem(product, undefined, undefined, product.price);
     toast.success("Produto adicionado ao carrinho!");
   };
 
@@ -61,7 +64,7 @@ export function ProductCard({ product }: { product: Product }) {
   };
 
   const handleAddWithOptions = () => {
-    if (availableSizes.length > 0 && !selectedSize) {
+    if (sizeVariants.length > 0 && !selectedSize) {
       toast.error("Por favor, selecione um tamanho.");
       return;
     }
@@ -71,10 +74,10 @@ export function ProductCard({ product }: { product: Product }) {
       return;
     }
 
-    const size = availableSizes.length > 0 ? selectedSize : undefined;
+    const size = sizeVariants.length > 0 ? selectedSize : undefined;
     const color = availableColors.length > 0 ? selectedColor : undefined;
 
-    addItem(product, size, color);
+    addItem(product, size, color, selectedVariantPrice);
 
     const details: string[] = [];
     if (size) details.push(`Tam: ${size}`);
@@ -292,7 +295,7 @@ export function ProductCard({ product }: { product: Product }) {
                     </p>
                   )}
                   <p className="text-lg font-extrabold text-[#cc0000] mt-1.5">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(selectedVariantPrice)}
                   </p>
                 </div>
               </div>
@@ -300,28 +303,36 @@ export function ProductCard({ product }: { product: Product }) {
               {/* Variation Options */}
               <div className="space-y-4 py-3">
                 {/* Size Selector */}
-                {availableSizes.length > 0 && (
+                {sizeVariants.length > 0 && (
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-[#cc0000]" />
                       Escolha o Tamanho:
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {availableSizes.map((sz) => {
-                        const isSelected = selectedSize === sz;
+                      {sizeVariants.map((variant) => {
+                        const isSelected = selectedSize === variant.label;
+                        const effectivePrice = variant.price > 0 ? variant.price : product.price;
                         return (
                           <button
-                            key={sz}
+                            key={variant.label}
                             type="button"
-                            onClick={() => setSelectedSize(sz)}
-                            className={`min-w-[42px] px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
+                            onClick={() => setSelectedSize(variant.label)}
+                            className={`flex flex-col items-center min-w-[52px] px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer ${
                               isSelected
                                 ? "bg-[#cc0000] text-white border-[#cc0000] shadow-sm shadow-[#cc0000]/30"
                                 : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                             }`}
                           >
-                            {sz}
-                            {isSelected && <Check className="h-3 w-3" />}
+                            <span className="flex items-center gap-1">
+                              {variant.label}
+                              {isSelected && <Check className="h-3 w-3" />}
+                            </span>
+                            <span className={`text-[9px] font-semibold mt-0.5 ${
+                              isSelected ? "text-white/80" : "text-slate-400"
+                            }`}>
+                              {formatCurrency(effectivePrice)}
+                            </span>
                           </button>
                         );
                       })}
@@ -367,7 +378,7 @@ export function ProductCard({ product }: { product: Product }) {
                   className="w-full rounded-xl bg-gradient-to-r from-[#cc0000] to-[#b30000] text-white font-bold text-sm py-3 shadow-md shadow-[#cc0000]/25 hover:brightness-105"
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
-                  Adicionar ao Carrinho • {formatCurrency(product.price)}
+                  Adicionar ao Carrinho • {formatCurrency(selectedVariantPrice)}
                 </Button>
               </div>
             </motion.div>

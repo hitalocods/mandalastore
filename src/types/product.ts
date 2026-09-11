@@ -23,6 +23,12 @@ export const categories = [
   "Preto Velho (Gesso e Cerâmica)",
 ] as const;
 
+/** Represents a size variant with an optional individual price. */
+export type SizeVariant = {
+  label: string;
+  price: number;
+};
+
 export type Product = {
   id: string;
   name: string;

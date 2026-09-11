@@ -6,4 +6,6 @@ export type CartItem = {
   quantity: number;
   selectedSize?: string;
   selectedColor?: string;
+  /** Effective price for the chosen size variant. Falls back to product.price when absent. */
+  selectedPrice?: number;
 };

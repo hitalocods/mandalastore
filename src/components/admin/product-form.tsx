@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { categories as defaultCategories, type Product } from "@/types/product";
+import { parseSizeVariants, serializeSizeVariants } from "@/lib/size-variants";
+import { categories as defaultCategories, type Product, type SizeVariant } from "@/types/product";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -45,13 +46,16 @@ export function ProductForm({
   }, [availableCategories, product?.category]);
 
   const [category, setCategory] = useState(product?.category || uniqueCategories[0] || "Acessórios");
-  const [sizes, setSizes] = useState<string>(product?.sizes || "");
+  // sizeVariants: list of {label, price} — the core state for size+pricing
+  const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>(() =>
+    parseSizeVariants(product?.sizes),
+  );
   const [colors, setColors] = useState<string>(product?.colors || "");
 
   useEffect(() => {
     if (product) {
       setCategory(product.category);
-      setSizes(product.sizes || "");
+      setSizeVariants(parseSizeVariants(product.sizes));
       setColors(product.colors || "");
     }
   }, [product]);
@@ -79,23 +83,26 @@ export function ProductForm({
   ];
 
   const togglePresetSize = (sizeTag: string) => {
-    const currentList = sizes
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (currentList.includes(sizeTag)) {
-      setSizes(currentList.filter((s) => s !== sizeTag).join(", "));
+    const exists = sizeVariants.some((v) => v.label === sizeTag);
+    if (exists) {
+      setSizeVariants((prev) => prev.filter((v) => v.label !== sizeTag));
     } else {
-      setSizes([...currentList, sizeTag].join(", "));
+      // Default price: use product.price as a convenient starting point
+      setSizeVariants((prev) => [...prev, { label: sizeTag, price: product?.price ?? 0 }]);
     }
   };
 
-  const isSizeSelected = (sizeTag: string) => {
-    const currentList = sizes
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return currentList.includes(sizeTag);
+  const isSizeSelected = (sizeTag: string) =>
+    sizeVariants.some((v) => v.label === sizeTag);
+
+  const updateSizePrice = (label: string, price: number) => {
+    setSizeVariants((prev) =>
+      prev.map((v) => (v.label === label ? { ...v, price } : v)),
+    );
+  };
+
+  const removeSizeVariant = (label: string) => {
+    setSizeVariants((prev) => prev.filter((v) => v.label !== label));
   };
 
   const togglePresetColor = (colorTag: string) => {
@@ -184,7 +191,7 @@ export function ProductForm({
     <form
       action={(formData) => {
         formData.set("category", category);
-        formData.set("sizes", sizes);
+        formData.set("sizes", serializeSizeVariants(sizeVariants) ?? "");
         formData.set("colors", colors);
         formData.set("existing_images", existingImages.join(","));
 
@@ -286,9 +293,12 @@ export function ProductForm({
           ))}
         </select>
       </div>
-      <div className="grid gap-1.5">
-        <Label className="text-xs font-semibold text-slate-700">Tamanhos Disponíveis (Opcional / Roupas)</Label>
-        <div className="flex flex-wrap gap-1.5 pb-1">
+      <div className="grid gap-2">
+        <Label className="text-xs font-semibold text-slate-700">
+          Tamanhos e Preços (Opcional)
+        </Label>
+        {/* Preset size toggle buttons */}
+        <div className="flex flex-wrap gap-1.5">
           {presetSizes.map((sz) => {
             const selected = isSizeSelected(sz);
             return (
@@ -308,16 +318,71 @@ export function ProductForm({
             );
           })}
         </div>
-        <Input
-          id={product ? `sizes-${product.id}` : "sizes"}
-          name="sizes"
-          value={sizes}
-          onChange={(e) => setSizes(e.target.value)}
-          placeholder="Ex: P, M, G, GG ou 38, 40, 42"
-          className="bg-white border-slate-200 text-slate-900 text-xs focus:border-amber-500"
-        />
-        <p className="text-[10px] text-slate-400">Clique nos atalhos acima ou digite os tamanhos separados por vírgula.</p>
+
+        {/* Selected sizes with individual price inputs */}
+        {sizeVariants.length > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-2.5 space-y-2">
+            <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider">
+              Defina o preço de cada tamanho
+            </p>
+            <div className="grid gap-1.5">
+              {sizeVariants.map((variant) => (
+                <div key={variant.label} className="flex items-center gap-2">
+                  <span className="inline-flex min-w-[36px] items-center justify-center rounded-md bg-amber-500 px-2 py-1 text-[11px] font-bold text-white">
+                    {variant.label}
+                  </span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-medium pointer-events-none">
+                      R$
+                    </span>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={variant.price === 0 ? "" : variant.price}
+                      onChange={(e) =>
+                        updateSizePrice(variant.label, parseFloat(e.target.value) || 0)
+                      }
+                      placeholder="0,00"
+                      className="pl-8 bg-white border-slate-200 text-slate-900 text-xs focus:border-amber-500 h-8"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeSizeVariant(variant.label)}
+                    className="h-8 w-8 flex items-center justify-center rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 transition cursor-pointer"
+                    title="Remover tamanho"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Custom size text field */}
+        <div className="flex gap-2">
+          <Input
+            placeholder="Tamanho personalizado (ex: 3XG, 50, Infantil)"
+            className="bg-white border-slate-200 text-slate-900 text-xs focus:border-amber-500 flex-1"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                const val = (e.target as HTMLInputElement).value.trim();
+                if (val && !sizeVariants.some((v) => v.label === val)) {
+                  setSizeVariants((prev) => [...prev, { label: val, price: product?.price ?? 0 }]);
+                }
+                (e.target as HTMLInputElement).value = "";
+              }
+            }}
+          />
+        </div>
+        <p className="text-[10px] text-slate-400">
+          Clique nos atalhos para selecionar. Digite tamanhos customizados e pressione Enter. Defina o preço de cada tamanho acima.
+        </p>
       </div>
+
       <div className="grid gap-1.5">
         <Label className="text-xs font-semibold text-slate-700">Cores Disponíveis (Opcional / Velas, Artigos)</Label>
         <div className="flex flex-wrap gap-1.5 pb-1 max-h-32 overflow-y-auto">

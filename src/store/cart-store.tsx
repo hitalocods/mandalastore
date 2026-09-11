@@ -15,7 +15,7 @@ type CartContextValue = {
   items: CartItem[];
   count: number;
   subtotal: number;
-  addItem: (product: Product, selectedSize?: string, selectedColor?: string) => void;
+  addItem: (product: Product, selectedSize?: string, selectedColor?: string, selectedPrice?: number) => void;
   removeItem: (itemId: string) => void;
   setQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -47,7 +47,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(storageKey, JSON.stringify(items));
   }, [items]);
 
-  const addItem = useCallback((product: Product, selectedSize?: string, selectedColor?: string) => {
+  const addItem = useCallback((product: Product, selectedSize?: string, selectedColor?: string, selectedPrice?: number) => {
     setItems((current) => {
       const itemId = getCartItemId(product.id, selectedSize, selectedColor);
       const existing = current.find(
@@ -69,7 +69,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      return [...current, { id: itemId, product, quantity: 1, selectedSize, selectedColor }];
+      return [...current, { id: itemId, product, quantity: 1, selectedSize, selectedColor, selectedPrice }];
     });
   }, []);
 
@@ -92,7 +92,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = useCallback(() => setItems([]), []);
 
   const value = useMemo<CartContextValue>(() => {
-    const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const subtotal = items.reduce((sum, item) => sum + (item.selectedPrice ?? item.product.price) * item.quantity, 0);
     const count = items.reduce((sum, item) => sum + item.quantity, 0);
 
     return { items, count, subtotal, addItem, removeItem, setQuantity, clearCart };
