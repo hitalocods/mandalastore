@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { parseSizeVariants, serializeSizeVariants } from "@/lib/size-variants";
+import { compressImage } from "@/lib/image-compression";
 import { categories as defaultCategories, type Product, type SizeVariant } from "@/types/product";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // Aceita fotos de até 20MB pois serão comprimidas automaticamente no navegador
 
 function isValidImage(file: File) {
   if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -21,7 +22,7 @@ function isValidImage(file: File) {
   }
 
   if (file.size > MAX_IMAGE_SIZE) {
-    return "A imagem precisa ter no máximo 5 MB.";
+    return "A imagem precisa ter no máximo 20 MB.";
   }
 
   return null;
@@ -146,30 +147,42 @@ export function ProductForm({
     };
   }, [newFiles]);
 
-  const handleFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFilesChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files || []);
     if (selected.length === 0) return;
 
-    const validated: { id: string; file: File; previewUrl: string }[] = [];
-    for (const file of selected) {
-      const err = isValidImage(file);
-      if (err) {
-        toast.error(`"${file.name}": ${err}`);
-        continue;
+    const hasLargeFiles = selected.some((f) => f.size > 500 * 1024);
+    const toastId = hasLargeFiles ? toast.loading("Otimizando imagem para upload rápido...") : undefined;
+
+    try {
+      const validated: { id: string; file: File; previewUrl: string }[] = [];
+      for (const file of selected) {
+        const err = isValidImage(file);
+        if (err) {
+          toast.error(`"${file.name}": ${err}`);
+          continue;
+        }
+
+        // Comprime automaticamente no navegador antes do envio
+        const optimizedFile = await compressImage(file);
+
+        validated.push({
+          id: crypto.randomUUID(),
+          file: optimizedFile,
+          previewUrl: URL.createObjectURL(optimizedFile),
+        });
       }
-      validated.push({
-        id: crypto.randomUUID(),
-        file,
-        previewUrl: URL.createObjectURL(file),
-      });
-    }
 
-    if (validated.length > 0) {
-      setNewFiles((prev) => [...prev, ...validated]);
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      if (validated.length > 0) {
+        setNewFiles((prev) => [...prev, ...validated]);
+      }
+    } catch {
+      toast.error("Erro ao processar as fotos selecionadas.");
+    } finally {
+      if (toastId) toast.dismiss(toastId);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -214,8 +227,35 @@ export function ProductForm({
               toast.success("Produto cadastrado com sucesso!");
             }
             if (onSuccess) onSuccess();
-          } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Falha ao salvar produto");
+          } catch (error: unknown) {
+            const err = error as { message?: string; digest?: string };
+            const msg = err?.message || "";
+            const digest = err?.digest || "";
+
+            const isSessionExpired =
+              msg === "UNAUTHORIZED_SESSION_EXPIRED" ||
+              msg === "NEXT_REDIRECT" ||
+              digest.startsWith("NEXT_REDIRECT") ||
+              msg.toLowerCase().includes("sessão expirou");
+
+            if (isSessionExpired) {
+              toast.error("Sua sessão expirou. Redirecionando para a página de login...");
+              setTimeout(() => {
+                window.location.href = "/admin/login";
+              }, 1200);
+              return;
+            }
+
+            if (
+              msg.includes("unexpected response") ||
+              msg.includes("Failed to fetch") ||
+              msg.includes("NetworkError")
+            ) {
+              toast.error("Erro de conexão com o servidor. Verifique sua internet ou tente novamente.");
+              return;
+            }
+
+            toast.error(msg || "Falha ao salvar produto");
           }
         });
       }}
@@ -491,7 +531,7 @@ export function ProductForm({
 
           {/* Add Photos Button */}
           <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
-            <p className="text-[10px] text-slate-400">JPG, PNG ou WEBP (Máx: 5 MB cada).</p>
+            <p className="text-[10px] text-slate-400">JPG, PNG ou WEBP (Otimizado automaticamente).</p>
             <label
               className={cn(
                 "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 shadow-2xs",
@@ -519,8 +559,17 @@ export function ProductForm({
           disabled={isPending}
           className="w-full rounded-lg bg-gradient-to-r from-[#cc0000] to-[#d4af37] text-white font-bold text-xs py-2.5 shadow-xs hover:brightness-105"
         >
-          {product ? <Pencil className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
-          {product ? "Salvar Alterações" : "Cadastrar Produto"}
+          {isPending ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              {product ? "Salvando alterações..." : "Cadastrando produto..."}
+            </span>
+          ) : (
+            <>
+              {product ? <Pencil className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+              {product ? "Salvar Alterações" : "Cadastrar Produto"}
+            </>
+          )}
         </Button>
       </div>
     </form>

@@ -27,8 +27,26 @@ export function NeighborhoodForm({ neighborhood }: { neighborhood?: Neighborhood
               await createNeighborhood(formData);
               toast.success("Bairro criado");
             }
-          } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Falha ao salvar bairro");
+          } catch (error: unknown) {
+            const err = error as { message?: string; digest?: string };
+            const msg = err?.message || "";
+            const digest = err?.digest || "";
+
+            const isSessionExpired =
+              msg === "UNAUTHORIZED_SESSION_EXPIRED" ||
+              msg === "NEXT_REDIRECT" ||
+              digest.startsWith("NEXT_REDIRECT") ||
+              msg.toLowerCase().includes("sessão expirou");
+
+            if (isSessionExpired) {
+              toast.error("Sua sessão expirou. Redirecionando para a página de login...");
+              setTimeout(() => {
+                window.location.href = "/admin/login";
+              }, 1200);
+              return;
+            }
+
+            toast.error(msg || "Falha ao salvar bairro");
           }
         });
       }}

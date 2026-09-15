@@ -3,7 +3,11 @@ import { sql } from "@/lib/db";
 import { categories as defaultCategories } from "@/types/product";
 import type { Category, CategoryWithChildren } from "@/types/category";
 
+let isCategoriesTableEnsured = false;
+
 export async function ensureCategoriesTable() {
+  if (isCategoriesTableEnsured) return;
+
   try {
     await sql`
       CREATE TABLE IF NOT EXISTS categories (
@@ -46,6 +50,7 @@ export async function ensureCategoriesTable() {
         index++;
       }
     }
+    isCategoriesTableEnsured = true;
   } catch (error) {
     console.error("Erro ao verificar/criar tabela de categorias:", error);
   }

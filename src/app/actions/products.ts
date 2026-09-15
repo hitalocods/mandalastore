@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { uploadImageToCloudinary, deleteImageFromCloudinary } from "@/lib/cloudinary";
 import { sql } from "@/lib/db";
@@ -10,7 +9,7 @@ async function assertAdmin() {
   const isAdmin = await isAdminAuthenticated();
 
   if (!isAdmin) {
-    redirect("/admin/login");
+    throw new Error("UNAUTHORIZED_SESSION_EXPIRED");
   }
 }
 

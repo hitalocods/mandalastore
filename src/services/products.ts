@@ -2,13 +2,27 @@ import { unstable_noStore as noStore } from "next/cache";
 import type { Product } from "@/types/product";
 import { sql } from "@/lib/db";
 
-export async function getProducts(): Promise<Product[]> {
-  noStore();
+let isProductsSchemaEnsured = false;
 
+async function ensureProductsSchema() {
+  if (isProductsSchemaEnsured) return;
   try {
     await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT;`;
     await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS colors TEXT;`;
     await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS images TEXT;`;
+    isProductsSchemaEnsured = true;
+  } catch (err) {
+    console.error("Erro ao verificar colunas de produtos:", err);
+  }
+}
+
+export async function getProducts(): Promise<Product[]> {
+  noStore();
+
+  try {
+    if (!isProductsSchemaEnsured) {
+      await ensureProductsSchema();
+    }
 
     const products = await sql`
       SELECT * FROM products
