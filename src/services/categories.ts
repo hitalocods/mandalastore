@@ -58,7 +58,6 @@ export async function ensureCategoriesTable() {
 
 export async function getCategories(): Promise<CategoryWithChildren[]> {
   noStore();
-  await ensureCategoriesTable();
 
   try {
     const rows = (await sql`
@@ -95,7 +94,6 @@ export async function getCategories(): Promise<CategoryWithChildren[]> {
 
 export async function getAllFlatCategories(): Promise<Category[]> {
   noStore();
-  await ensureCategoriesTable();
 
   try {
     const rows = (await sql`

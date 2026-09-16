@@ -31,17 +31,23 @@ export default async function AdminPage() {
     redirect("/admin/login");
   }
 
-  const products = await getProducts();
-  const categoriesTree = await getCategories();
-  const flatCategories = await getAllFlatCategories();
+  const products = (await getProducts().catch(() => [])) || [];
+  const categoriesTree = (await getCategories().catch(() => [])) || [];
+  const flatCategories = (await getAllFlatCategories().catch(() => [])) || [];
 
-  const inventory = products.reduce((sum, product) => sum + product.stock, 0);
-  const catalogValue = products.reduce(
-    (sum, product) => sum + product.price * product.stock,
-    0
+  const inventory = Array.isArray(products)
+    ? products.reduce((sum, product) => sum + (Number(product.stock) || 0), 0)
+    : 0;
+  const catalogValue = Array.isArray(products)
+    ? products.reduce(
+        (sum, product) => sum + (Number(product.price) || 0) * (Number(product.stock) || 0),
+        0
+      )
+    : 0;
+
+  const flatCategoryNames = Array.from(
+    new Set(Array.isArray(flatCategories) ? flatCategories.map((c) => c.name) : [])
   );
-
-  const flatCategoryNames = Array.from(new Set(flatCategories.map((c) => c.name)));
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-amber-100 selection:text-slate-900">

@@ -6,9 +6,9 @@ import { Storefront } from "@/components/storefront";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const products = await getProducts();
-  const neighborhoods = await getActiveNeighborhoods();
-  const categoriesTree = await getCategories();
+  const products = (await getProducts().catch(() => [])) || [];
+  const neighborhoods = (await getActiveNeighborhoods().catch(() => [])) || [];
+  const categoriesTree = (await getCategories().catch(() => [])) || [];
 
   return (
     <Storefront
