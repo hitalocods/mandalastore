@@ -8,7 +8,6 @@ import {
   TrendingUp,
   X,
   Sparkles,
-  CheckCircle2,
   ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +45,14 @@ export function StorageLimitAlert() {
         {/* Glow & background decor */}
         <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-red-400/10 blur-3xl" />
         <div className="pointer-events-none absolute -left-12 -bottom-12 h-40 w-40 rounded-full bg-amber-400/15 blur-3xl" />
+
+        <button
+          onClick={() => setIsDismissed(true)}
+          className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-red-100 hover:text-slate-700 transition-colors z-10 cursor-pointer"
+          title="Minimizar aviso"
+        >
+          <X className="h-4 w-4" />
+        </button>
 
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           {/* Main Info */}
@@ -88,7 +95,7 @@ export function StorageLimitAlert() {
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-red-600 transition-all"
-                  style={{ width: "100%" }}
+                  style={{ width: `${percent}%` }}
                 />
               </div>
 
