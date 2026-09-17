@@ -62,7 +62,7 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
     }
 
     if (data.paymentMethod === "money" && data.needsChange && data.changeFor) {
-      message += `Troco para R$${formatCurrency(data.changeFor)}\n\n`;
+      message += `Troco para ${formatCurrency(Number(data.changeFor))}\n\n`;
     }
 
     if (data.deliveryType === "delivery") {
