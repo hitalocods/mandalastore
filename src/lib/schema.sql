@@ -45,3 +45,20 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);
 CREATE INDEX IF NOT EXISTS idx_categories_sort_order ON categories(sort_order ASC);
 
+-- Schema para controle de mensalidades do sistema
+CREATE TABLE IF NOT EXISTS system_billing (
+  id TEXT PRIMARY KEY,
+  month_reference TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  amount DECIMAL(10, 2) NOT NULL DEFAULT 60.00,
+  due_date DATE NOT NULL,
+  preference_id TEXT,
+  payment_id TEXT,
+  payment_method TEXT,
+  paid_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_system_billing_month ON system_billing(month_reference);
+
