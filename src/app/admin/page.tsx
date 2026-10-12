@@ -21,6 +21,8 @@ import { getProducts } from "@/services/products";
 import { getCategories, getAllFlatCategories } from "@/services/categories";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { formatCurrency } from "@/lib/utils";
+import { getBillingStatus } from "@/services/billing";
+import { AtlasLicenseModal } from "@/components/admin/atlas-license-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,7 @@ export default async function AdminPage() {
   const products = (await getProducts().catch(() => [])) || [];
   const categoriesTree = (await getCategories().catch(() => [])) || [];
   const flatCategories = (await getAllFlatCategories().catch(() => [])) || [];
+  const billingStatus = await getBillingStatus();
 
   const inventory = Array.isArray(products)
     ? products.reduce((sum, product) => sum + (Number(product.stock) || 0), 0)
@@ -68,6 +71,7 @@ export default async function AdminPage() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <AtlasLicenseModal billing={billingStatus} />
             <Button
               asChild
               variant="outline"
