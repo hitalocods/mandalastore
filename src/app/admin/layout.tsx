@@ -2,6 +2,7 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import { getBillingStatus } from "@/services/billing";
 import { PaymentBlockedScreen } from "@/components/admin/payment-blocked-screen";
 import { PaymentWarningBanner } from "@/components/admin/payment-warning-banner";
+import { AdminShell } from "@/components/admin/admin-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -26,13 +27,13 @@ export default async function AdminLayout({
   }
 
   return (
-    <div>
+    <AdminShell billingStatus={billingStatus}>
       {billingStatus.isWarningPeriod && (
-        <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+        <div className="mb-6">
           <PaymentWarningBanner billing={billingStatus} />
         </div>
       )}
       {children}
-    </div>
+    </AdminShell>
   );
 }

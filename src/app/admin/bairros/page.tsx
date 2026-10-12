@@ -1,53 +1,42 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { NeighborhoodForm } from "@/components/admin/neighborhood-form";
 import { AdminNeighborhoods } from "@/components/admin/admin-neighborhoods";
-import { Button } from "@/components/ui/button";
-import { isAdminAuthenticated } from "@/lib/auth";
 import { getNeighborhoods } from "@/services/neighborhoods";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminNeighborhoodsPage() {
-  const isAdmin = await isAdminAuthenticated();
-
-  if (!isAdmin) {
-    redirect("/admin/login");
-  }
-
   const neighborhoods = await getNeighborhoods();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-amber-500 selection:text-zinc-950">
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-md shadow-xl">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
-              Taxas & Entregas
-            </span>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
-              <MapPin className="h-6 w-6 text-amber-400" /> Gerenciamento de Bairros
-            </h1>
-          </div>
-          <Button
-            asChild
-            variant="outline"
-            className="rounded-lg border-zinc-800 bg-zinc-950 text-zinc-200 hover:bg-zinc-800 hover:text-white text-xs font-semibold"
-          >
-            <Link href="/admin">
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Voltar ao Painel Admin
-            </Link>
-          </Button>
-        </header>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          Entregas & Frete
+        </span>
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+          <MapPin className="h-7 w-7 text-amber-600" /> Bairros & Taxas de Entrega
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-600 mt-1">
+          Cadastre os bairros atendidos e configure o valor da taxa de entrega cobrada no checkout.
+        </p>
+      </div>
 
-        <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-md shadow-xl">
-          <NeighborhoodForm />
-        </section>
+      {/* Formulário de Cadastro */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">
+          Adicionar / Editar Bairro
+        </h2>
+        <NeighborhoodForm />
+      </div>
 
-        <section>
-          <AdminNeighborhoods neighborhoods={neighborhoods} />
-        </section>
+      {/* Lista de Bairros */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+          Bairros Cadastrados ({neighborhoods.length})
+        </h2>
+        <AdminNeighborhoods neighborhoods={neighborhoods} />
       </div>
     </div>
   );
