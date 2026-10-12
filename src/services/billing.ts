@@ -286,7 +286,9 @@ export async function getOrCreateMercadoPagoPreference(
 
   // Gera nova preferência
   const safeBaseUrl = baseUrl.replace(/\/$/, "");
-  const payload = {
+  const isHttps = safeBaseUrl.startsWith("https://") && !safeBaseUrl.includes("localhost");
+
+  const payload: Record<string, unknown> = {
     items: [
       {
         id: `mensalidade-${monthRef}`,
@@ -299,14 +301,18 @@ export async function getOrCreateMercadoPagoPreference(
     ],
     external_reference: `billing-${monthRef}`,
     back_urls: {
-      success: `${safeBaseUrl}/admin?payment_status=success&ref=${monthRef}`,
-      failure: `${safeBaseUrl}/admin?payment_status=failure&ref=${monthRef}`,
-      pending: `${safeBaseUrl}/admin?payment_status=pending&ref=${monthRef}`,
+      success: `${safeBaseUrl}/admin/licenca?payment_status=success&ref=${monthRef}`,
+      failure: `${safeBaseUrl}/admin/licenca?payment_status=failure&ref=${monthRef}`,
+      pending: `${safeBaseUrl}/admin/licenca?payment_status=pending&ref=${monthRef}`,
     },
-    auto_return: "approved",
     statement_descriptor: "MANDALA PRIME",
-    notification_url: `${safeBaseUrl}/api/webhooks/mercadopago`,
   };
+
+  // Mercado Pago só aceita auto_return e notification_url em domínios públicos seguros (HTTPS)
+  if (isHttps) {
+    payload.auto_return = "approved";
+    payload.notification_url = `${safeBaseUrl}/api/webhooks/mercadopago`;
+  }
 
   const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
@@ -318,9 +324,16 @@ export async function getOrCreateMercadoPagoPreference(
   });
 
   if (!response.ok) {
-    const errorData = await response.text();
-    console.error("Erro Mercado Pago Checkout Preferences:", errorData);
-    throw new Error(`Falha ao criar checkout do Mercado Pago: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error("Erro Mercado Pago Checkout Preferences:", errorText);
+    let detail = response.statusText;
+    try {
+      const parsed = JSON.parse(errorText);
+      detail = parsed.message || parsed.error || detail;
+    } catch {
+      // ignora
+    }
+    throw new Error(`Falha ao criar checkout do Mercado Pago: ${detail}`);
   }
 
   const data = await response.json();
