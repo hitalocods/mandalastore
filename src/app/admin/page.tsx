@@ -22,8 +22,6 @@ import { getCategories, getAllFlatCategories } from "@/services/categories";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { formatCurrency } from "@/lib/utils";
 
-import { PaymentDueAlert } from "@/components/admin/payment-due-alert";
-
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
@@ -103,8 +101,6 @@ export default async function AdminPage() {
 
       {/* Main Content Area */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-        {/* Payment Due Alert Banner */}
-        <PaymentDueAlert />
 
         {/* KPI Dashboard Grid */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
