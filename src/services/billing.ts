@@ -286,7 +286,12 @@ export async function getOrCreateMercadoPagoPreference(
 
   // Gera nova preferência
   const safeBaseUrl = baseUrl.replace(/\/$/, "");
-  const isHttps = safeBaseUrl.startsWith("https://") && !safeBaseUrl.includes("localhost");
+  const isPublicHttps =
+    safeBaseUrl.startsWith("https://") &&
+    !safeBaseUrl.includes("localhost") &&
+    !safeBaseUrl.includes("127.0.0.1") &&
+    !safeBaseUrl.includes("192.168.") &&
+    !safeBaseUrl.includes(":3000");
 
   const payload: Record<string, unknown> = {
     items: [
@@ -308,9 +313,7 @@ export async function getOrCreateMercadoPagoPreference(
     statement_descriptor: "MANDALA PRIME",
   };
 
-  // Mercado Pago só aceita auto_return e notification_url em domínios públicos seguros (HTTPS)
-  if (isHttps) {
-    payload.auto_return = "approved";
+  if (isPublicHttps) {
     payload.notification_url = `${safeBaseUrl}/api/webhooks/mercadopago`;
   }
 

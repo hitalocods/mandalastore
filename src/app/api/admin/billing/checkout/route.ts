@@ -15,7 +15,12 @@ export async function POST(request: Request) {
 
     // Determina a URL base dinamicamente da requisição
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
-    const proto = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const isLocal =
+      host.includes("localhost") ||
+      host.includes("127.0.0.1") ||
+      host.includes("192.168.") ||
+      host.includes(":3000");
+    const proto = request.headers.get("x-forwarded-proto") || (isLocal ? "http" : "https");
     const baseUrl = `${proto}://${host}`;
 
     const { initPoint, preferenceId } = await getOrCreateMercadoPagoPreference(monthRef, baseUrl);
