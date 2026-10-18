@@ -244,80 +244,93 @@ export async function getBillingStatus(): Promise<BillingStatus> {
 }
 
 /**
- * Cria ou recupera a preferência no Mercado Pago Checkout Pro
+ * Cria ou recupera o checkout e QR Code de pagamento no AbacatePay (exclusivo via PIX)
  */
-export async function getOrCreateMercadoPagoPreference(
+export async function getOrCreateAbacatePayCheckout(
   monthRef: string,
   baseUrl: string
-): Promise<{ initPoint: string; preferenceId: string }> {
-  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
+): Promise<{
+  initPoint: string;
+  preferenceId: string;
+  qrCode?: string | null;
+  pixCopyPaste?: string | null;
+}> {
+  const token = process.env.ABACATEPAY_API_KEY;
   if (!token) {
-    throw new Error("MERCADOPAGO_ACCESS_TOKEN não configurado no .env");
+    throw new Error("ABACATEPAY_API_KEY não configurado no .env");
   }
 
   const [yearStr, monthStr] = monthRef.split("-");
   const monthNum = Number(monthStr);
   const yearNum = Number(yearStr);
   const billing = await getOrCreateMonthBilling(monthRef, yearNum, monthNum);
+  const safeBaseUrl = baseUrl.replace(/\/$/, "");
 
-  // Se já tem preferência salva, verifica se podemos reutilizar
-  // Para evitar criar centenas de preferências repetidas
-  if (billing.preference_id) {
-    try {
-      const checkRes = await fetch(
-        `https://api.mercadopago.com/checkout/preferences/${billing.preference_id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
+  const amountCents = Math.round((Number(billing.amount) || 60) * 100);
+
+  // 1. Tenta gerar via PIX Transparente direto (retorna QR Code imagem + Copia e Cola)
+  try {
+    const transparentRes = await fetch("https://api.abacatepay.com/v2/transparents/create", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        method: "PIX",
+        data: {
+          amount: amountCents,
+          description: `Mensalidade Mandala Prime (${monthStr}/${yearStr})`,
+          expiresIn: 86400, // 24 horas
+        },
+      }),
+    });
+
+    if (transparentRes.ok) {
+      const transparentData = await transparentRes.json();
+      const pix = transparentData.data;
+
+      if (pix?.id && (pix?.brCode || pix?.brCodeBase64)) {
+        try {
+          await sql`
+            UPDATE system_billing
+            SET preference_id = ${pix.id}, updated_at = CURRENT_TIMESTAMP
+            WHERE month_reference = ${monthRef}
+          `;
+        } catch (e) {
+          console.error("Erro ao atualizar preference_id do PIX no banco:", e);
         }
-      );
-      if (checkRes.ok) {
-        const prefData = await checkRes.json();
-        if (prefData.init_point) {
-          return {
-            initPoint: prefData.init_point,
-            preferenceId: billing.preference_id,
-          };
-        }
+
+        return {
+          initPoint: pix.receiptUrl || `${safeBaseUrl}/admin/licenca`,
+          preferenceId: pix.id,
+          qrCode: pix.brCodeBase64 || null,
+          pixCopyPaste: pix.brCode || null,
+        };
       }
-    } catch (e) {
-      console.warn("Não foi possível reutilizar preferência antiga, gerando nova:", e);
     }
+  } catch (err) {
+    console.warn("Falha ao gerar PIX transparente, usando checkout:", err);
   }
 
-  // Gera nova preferência
-  const safeBaseUrl = baseUrl.replace(/\/$/, "");
-  const isPublicHttps =
-    safeBaseUrl.startsWith("https://") &&
-    !safeBaseUrl.includes("localhost") &&
-    !safeBaseUrl.includes("127.0.0.1") &&
-    !safeBaseUrl.includes("192.168.") &&
-    !safeBaseUrl.includes(":3000");
+  // 2. Fallback: gera via Checkout Pro (Página do AbacatePay exclusiva PIX)
+  const productId = process.env.ABACATEPAY_PRODUCT_ID || "prod_PuAHphuLmGRC40GuG0D4Lbpj";
 
-  const payload: Record<string, unknown> = {
+  const payload = {
+    externalId: `billing-${monthRef}`,
     items: [
       {
-        id: `mensalidade-${monthRef}`,
-        title: `Mensalidade Plataforma Mandala Prime (${monthStr}/${yearStr})`,
-        description: `Manutenção, suporte e hospedagem da loja virtual Mandala Prime referente a ${monthStr}/${yearStr}. Vencimento dia 20.`,
+        id: productId,
         quantity: 1,
-        unit_price: Number(billing.amount) || DEFAULT_AMOUNT,
-        currency_id: "BRL",
       },
     ],
-    external_reference: `billing-${monthRef}`,
-    back_urls: {
-      success: `${safeBaseUrl}/admin/licenca?payment_status=success&ref=${monthRef}`,
-      failure: `${safeBaseUrl}/admin/licenca?payment_status=failure&ref=${monthRef}`,
-      pending: `${safeBaseUrl}/admin/licenca?payment_status=pending&ref=${monthRef}`,
-    },
-    statement_descriptor: "MANDALA PRIME",
+    methods: ["PIX"],
+    frequency: "ONE_TIME",
+    returnUrl: `${safeBaseUrl}/admin/licenca?ref=${monthRef}`,
+    completionUrl: `${safeBaseUrl}/admin/licenca?payment_status=success&ref=${monthRef}`,
   };
 
-  if (isPublicHttps) {
-    payload.notification_url = `${safeBaseUrl}/api/webhooks/mercadopago`;
-  }
-
-  const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
+  const response = await fetch("https://api.abacatepay.com/v2/checkouts/create", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -328,22 +341,25 @@ export async function getOrCreateMercadoPagoPreference(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Erro Mercado Pago Checkout Preferences:", errorText);
+    console.error("Erro AbacatePay checkouts/create:", errorText);
     let detail = response.statusText;
     try {
       const parsed = JSON.parse(errorText);
-      detail = parsed.message || parsed.error || detail;
+      detail = parsed.error || parsed.message || detail;
     } catch {
       // ignora
     }
-    throw new Error(`Falha ao criar checkout do Mercado Pago: ${detail}`);
+    throw new Error(`Falha ao gerar cobrança no AbacatePay: ${detail}`);
   }
 
   const data = await response.json();
-  const initPoint = data.init_point;
-  const preferenceId = data.id;
+  const initPoint = data.data?.url;
+  const preferenceId = data.data?.id;
 
-  // Salva no banco
+  if (!initPoint || !preferenceId) {
+    throw new Error("Resposta inválida da AbacatePay ao gerar checkout");
+  }
+
   try {
     await sql`
       UPDATE system_billing
@@ -354,8 +370,11 @@ export async function getOrCreateMercadoPagoPreference(
     console.error("Erro ao atualizar preference_id no banco:", e);
   }
 
-  return { initPoint, preferenceId };
+  return { initPoint, preferenceId, qrCode: null, pixCopyPaste: null };
 }
+
+// Alias para compatibilidade
+export const getOrCreateMercadoPagoPreference = getOrCreateAbacatePayCheckout;
 
 /**
  * Marca uma mensalidade como paga
@@ -378,43 +397,78 @@ export async function markBillingAsPaid(
 }
 
 /**
- * Consulta a API do Mercado Pago para verificar se há algum pagamento aprovado recente para a mensalidade
+ * Consulta a API da AbacatePay para verificar se a cobrança foi paga
  */
-export async function checkMercadoPagoPaymentStatus(monthRef: string): Promise<boolean> {
-  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
+export async function checkAbacatePayPaymentStatus(monthRef: string): Promise<boolean> {
+  const token = process.env.ABACATEPAY_API_KEY;
   if (!token) return false;
 
   try {
-    const searchUrl = `https://api.mercadopago.com/v1/payments/search?external_reference=billing-${monthRef}&sort=date_created&criteria=desc`;
-    const res = await fetch(searchUrl, {
+    const [yearStr, monthStr] = monthRef.split("-");
+    const billing = await getOrCreateMonthBilling(monthRef, Number(yearStr), Number(monthStr));
+
+    // Se tiver id de PIX transparente (ex: pix_char_...)
+    if (billing.preference_id && billing.preference_id.startsWith("pix_char_")) {
+      try {
+        const checkRes = await fetch(
+          `https://api.abacatepay.com/v2/transparents/check?id=${billing.preference_id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          }
+        );
+        if (checkRes.ok) {
+          const checkJson = await checkRes.json();
+          if (checkJson.data?.status === "PAID") {
+            await markBillingAsPaid(monthRef, billing.preference_id, "PIX/AbacatePay");
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn("Erro ao checar transparent pix:", e);
+      }
+    }
+
+    // Consulta também lista de checkouts
+    const res = await fetch("https://api.abacatepay.com/v2/checkouts/list", {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
 
     if (!res.ok) return false;
 
-    const data = await res.json();
-    const payments = data.results || [];
+    const json = await res.json();
+    const checkouts = json.data || [];
 
-    // Procura por algum pagamento aprovado
-    interface MercadoPagoPaymentResult {
-      id?: string | number;
+    interface AbacateCheckout {
+      id?: string;
+      externalId?: string | null;
       status?: string;
-      payment_type_id?: string;
-      payment_method_id?: string;
+      paidAmount?: number | null;
     }
-    const approved = payments.find((p: MercadoPagoPaymentResult) => p.status === "approved");
-    if (approved && approved.id) {
-      await markBillingAsPaid(
-        monthRef,
-        String(approved.id),
-        approved.payment_type_id || approved.payment_method_id
-      );
+
+    const matchedCheckout = checkouts.find((c: AbacateCheckout) => {
+      const matchId = billing.preference_id && c.id === billing.preference_id;
+      const matchExt = c.externalId === `billing-${monthRef}`;
+      return matchId || matchExt;
+    });
+
+    if (
+      matchedCheckout &&
+      (matchedCheckout.status === "PAID" ||
+        (matchedCheckout.paidAmount && matchedCheckout.paidAmount > 0))
+    ) {
+      await markBillingAsPaid(monthRef, matchedCheckout.id, "PIX/AbacatePay");
       return true;
     }
   } catch (error) {
-    console.error("Erro ao consultar pagamentos no Mercado Pago:", error);
+    console.error("Erro ao consultar pagamentos no AbacatePay:", error);
   }
 
   return false;
 }
+
+// Alias para compatibilidade
+export const checkMercadoPagoPaymentStatus = checkAbacatePayPaymentStatus;
+
+

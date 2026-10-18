@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOutAdmin } from "@/app/actions/auth";
+import { PixPaymentModal } from "@/components/admin/pix-payment-modal";
 import type { BillingStatus } from "@/services/billing";
 
 interface PaymentBlockedScreenProps {
@@ -30,8 +31,14 @@ export function PaymentBlockedScreen({ billing }: PaymentBlockedScreenProps) {
   const [bypassKey, setBypassKey] = useState("");
   const [bypassLoading, setBypassLoading] = useState(false);
   const [bypassError, setBypassError] = useState<string | null>(null);
+  const [modalData, setModalData] = useState<{
+    isOpen: boolean;
+    qrCode?: string | null;
+    pixCopyPaste?: string | null;
+    checkoutUrl?: string | null;
+  }>({ isOpen: false });
 
-  // Iniciar checkout Mercado Pago
+  // Iniciar checkout AbacatePay via PIX
   const handleOpenCheckout = async () => {
     try {
       setIsLoadingCheckout(true);
@@ -42,10 +49,17 @@ export function PaymentBlockedScreen({ billing }: PaymentBlockedScreenProps) {
       });
 
       const data = await res.json();
-      if (data.initPoint) {
+      if (data.qrCode || data.pixCopyPaste) {
+        setModalData({
+          isOpen: true,
+          qrCode: data.qrCode,
+          pixCopyPaste: data.pixCopyPaste,
+          checkoutUrl: data.initPoint,
+        });
+      } else if (data.initPoint) {
         window.location.href = data.initPoint;
       } else {
-        alert(data.error || "Não foi possível abrir o checkout do Mercado Pago.");
+        alert(data.error || "Não foi possível abrir o checkout do AbacatePay.");
       }
     } catch {
       alert("Erro ao conectar com o serviço de pagamento.");
@@ -195,7 +209,7 @@ export function PaymentBlockedScreen({ billing }: PaymentBlockedScreenProps) {
               className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-sm sm:text-base shadow-lg shadow-emerald-950/50 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <CreditCard className="h-5 w-5" />
-              {isLoadingCheckout ? "Abrindo Mercado Pago..." : "Pagar Agora (Cartão ou PIX)"}
+              {isLoadingCheckout ? "Abrindo AbacatePay..." : "Pagar Agora via PIX"}
               <ExternalLink className="h-4 w-4 ml-auto opacity-70" />
             </Button>
 
@@ -206,7 +220,7 @@ export function PaymentBlockedScreen({ billing }: PaymentBlockedScreenProps) {
               className="w-full h-10 rounded-xl border-slate-800 bg-slate-900/60 text-slate-300 hover:bg-slate-800 hover:text-white text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isCheckingPayment ? "animate-spin" : ""}`} />
-              {isCheckingPayment ? "Verificando no Mercado Pago..." : "Já realizei o pagamento (Verificar Liberação)"}
+              {isCheckingPayment ? "Verificando no AbacatePay..." : "Já realizei o pagamento (Verificar Liberação)"}
             </Button>
 
             {checkResult && (
@@ -266,6 +280,17 @@ export function PaymentBlockedScreen({ billing }: PaymentBlockedScreenProps) {
               {bypassError && <p className="text-[11px] text-rose-400">{bypassError}</p>}
             </form>
           )}
+
+          <PixPaymentModal
+            isOpen={modalData.isOpen}
+            onClose={() => setModalData((prev) => ({ ...prev, isOpen: false }))}
+            monthRef={billing.dueMonthRef}
+            amount={billing.amount}
+            qrCodeBase64={modalData.qrCode}
+            pixCopyPaste={modalData.pixCopyPaste}
+            checkoutUrl={modalData.checkoutUrl}
+            onPaymentSuccess={() => window.location.reload()}
+          />
         </div>
       </main>
 

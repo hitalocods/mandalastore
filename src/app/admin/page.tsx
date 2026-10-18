@@ -8,10 +8,12 @@ import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getProducts } from "@/services/products";
 import { getAllFlatCategories } from "@/services/categories";
+import { getOrderStats } from "@/services/orders";
 import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +21,14 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage() {
   const products = (await getProducts().catch(() => [])) || [];
   const flatCategories = (await getAllFlatCategories().catch(() => [])) || [];
+  const orderStats = await getOrderStats().catch(() => ({
+    totalOrders: 0,
+    pendingCount: 0,
+    preparingCount: 0,
+    dispatchedCount: 0,
+    deliveredCount: 0,
+    totalRevenue: 0,
+  }));
 
   // Métricas do inventário
   const inventory = Array.isArray(products)
@@ -68,6 +78,20 @@ export default async function AdminDashboardPage() {
         <div className="flex items-center gap-2.5 shrink-0">
           <Button
             asChild
+            className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-10 px-4 shadow-sm gap-1.5"
+          >
+            <Link href="/admin/pedidos">
+              <Truck className="h-4 w-4" /> Pedidos & Rotas
+              {orderStats.pendingCount > 0 && (
+                <span className="rounded-full bg-white text-amber-900 px-1.5 py-0.2 text-[10px] font-black ml-1">
+                  {orderStats.pendingCount}
+                </span>
+              )}
+            </Link>
+          </Button>
+
+          <Button
+            asChild
             className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-10 px-4 shadow-sm gap-1.5"
           >
             <Link href="/admin/produtos/novo">
@@ -85,6 +109,36 @@ export default async function AdminDashboardPage() {
             </Link>
           </Button>
         </div>
+      </div>
+
+      {/* Banner de Atalho para Rotas de Entrega */}
+      <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-amber-500/20 border border-amber-300 text-amber-800 flex items-center justify-center shrink-0">
+            <Truck className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-sm sm:text-base font-bold text-slate-900">
+              Rotas de Entrega & Pedidos por Bairro
+            </h3>
+            <p className="text-xs text-slate-600">
+              {orderStats.pendingCount > 0 ? (
+                <>Você possui <strong className="text-amber-900">{orderStats.pendingCount}</strong> pedidos pendentes agrupados por bairro para montar as rotas do motoboy.</>
+              ) : (
+                <>Visualize e despache os pedidos organizados por bairro para facilitar a rota do motoboy.</>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <Button
+          asChild
+          className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-9 px-4 shrink-0 gap-1.5"
+        >
+          <Link href="/admin/pedidos">
+            Ver Pedidos & Rotas <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </Button>
       </div>
 
       {/* Grid de 4 KPIs Financeiros e Operacionais */}

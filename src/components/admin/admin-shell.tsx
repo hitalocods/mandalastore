@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Truck,
   Package,
   PlusCircle,
   Layers,
@@ -41,6 +42,12 @@ export function AdminShell({ children, billingStatus }: AdminShellProps) {
       title: "Dashboard",
       href: "/admin",
       icon: LayoutDashboard,
+      exact: true,
+    },
+    {
+      title: "Pedidos & Rotas",
+      href: "/admin/pedidos",
+      icon: Truck,
       exact: true,
     },
     {

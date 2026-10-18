@@ -75,7 +75,48 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
     return encodeURIComponent(message);
   };
 
-  const finishOrder = (data: CheckoutData, deliveryFee: number) => {
+  const finishOrder = async (data: CheckoutData, deliveryFee: number) => {
+    const neighborhood = neighborhoods.find((n: Neighborhood) => n.id === data.neighborhoodId);
+
+    // Salva o pedido no banco de dados para aparecer no painel de admin
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: data.fullName,
+          customerWhatsapp: data.whatsapp,
+          deliveryType: data.deliveryType,
+          neighborhoodId: data.neighborhoodId || null,
+          neighborhoodName: neighborhood?.name || null,
+          address: data.address || null,
+          addressNumber: data.number || null,
+          complement: data.complement || null,
+          reference: data.reference || null,
+          deliveryFee,
+          subtotal,
+          total: subtotal + deliveryFee,
+          paymentMethod: data.paymentMethod,
+          paymentDetails: {
+            installments: data.installments,
+            needsChange: data.needsChange,
+            changeFor: data.changeFor,
+          },
+          items: items.map((item) => ({
+            productId: item.product.id,
+            name: item.product.name,
+            price: item.selectedPrice ?? item.product.price,
+            quantity: item.quantity,
+            size: item.selectedSize || null,
+            color: item.selectedColor || null,
+            imageUrl: item.product.image_url || null,
+          })),
+        }),
+      });
+    } catch (e) {
+      console.error("Erro ao registrar pedido:", e);
+    }
+
     const message = formatWhatsAppMessage(data, deliveryFee);
     const phone = "5586988269144";
     window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener,noreferrer");

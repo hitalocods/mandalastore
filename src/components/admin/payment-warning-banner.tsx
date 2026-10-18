@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Clock, ExternalLink } from "lucide-react";
+import { QrCode, Clock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PixPaymentModal } from "@/components/admin/pix-payment-modal";
 import type { BillingStatus } from "@/services/billing";
 
 interface PaymentWarningBannerProps {
@@ -12,6 +13,12 @@ interface PaymentWarningBannerProps {
 export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [modalData, setModalData] = useState<{
+    isOpen: boolean;
+    qrCode?: string | null;
+    pixCopyPaste?: string | null;
+    checkoutUrl?: string | null;
+  }>({ isOpen: false });
 
   const handlePay = async () => {
     try {
@@ -22,10 +29,17 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
         body: JSON.stringify({ monthRef: billing.dueMonthRef }),
       });
       const data = await res.json();
-      if (data.initPoint) {
+      if (data.qrCode || data.pixCopyPaste) {
+        setModalData({
+          isOpen: true,
+          qrCode: data.qrCode,
+          pixCopyPaste: data.pixCopyPaste,
+          checkoutUrl: data.initPoint,
+        });
+      } else if (data.initPoint) {
         window.location.href = data.initPoint;
       } else {
-        alert(data.error || "Não foi possível abrir o checkout do Mercado Pago.");
+        alert(data.error || "Não foi possível abrir o checkout do AbacatePay.");
       }
     } catch {
       alert("Erro ao conectar com o serviço de pagamento.");
@@ -50,7 +64,7 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
             disabled={isLoading}
             className="h-7 rounded-lg bg-amber-600 px-3 text-[11px] font-bold text-white hover:bg-amber-700 cursor-pointer"
           >
-            <CreditCard className="mr-1 h-3 w-3" /> Pagar Agora
+            <QrCode className="mr-1 h-3 w-3" /> Pagar Agora
           </Button>
           <button
             onClick={() => setIsMinimized(false)}
@@ -79,7 +93,7 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
             Mensalidade de Suporte & Manutenção da Loja (R$ 60,00)
           </h3>
           <p className="text-xs text-slate-600">
-            A fatura deste mês vence dia <strong>20</strong>. Pague antecipadamente com Cartão ou PIX via Mercado Pago para garantir o funcionamento contínuo do seu painel.
+            A fatura deste mês vence dia <strong>20</strong>. Pague antecipadamente com PIX via AbacatePay para garantir o funcionamento contínuo do seu painel.
           </p>
         </div>
 
@@ -89,9 +103,8 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
             disabled={isLoading}
             className="h-9 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs px-4 cursor-pointer gap-1.5"
           >
-            <CreditCard className="h-3.5 w-3.5" />
-            {isLoading ? "Abrindo..." : "Pagar Fatura"}
-            <ExternalLink className="h-3 w-3 opacity-80" />
+            <QrCode className="h-3.5 w-3.5" />
+            {isLoading ? "Gerando QR Code..." : "Pagar Fatura via PIX"}
           </Button>
 
           <button
@@ -102,6 +115,17 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
           </button>
         </div>
       </div>
+
+      <PixPaymentModal
+        isOpen={modalData.isOpen}
+        onClose={() => setModalData((prev) => ({ ...prev, isOpen: false }))}
+        monthRef={billing.dueMonthRef}
+        amount={billing.amount}
+        qrCodeBase64={modalData.qrCode}
+        pixCopyPaste={modalData.pixCopyPaste}
+        checkoutUrl={modalData.checkoutUrl}
+        onPaymentSuccess={() => window.location.reload()}
+      />
     </div>
   );
 }

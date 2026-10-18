@@ -62,3 +62,32 @@ CREATE TABLE IF NOT EXISTS system_billing (
 
 CREATE INDEX IF NOT EXISTS idx_system_billing_month ON system_billing(month_reference);
 
+-- Schema para tabela de pedidos dos clientes
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  order_number SERIAL,
+  customer_name TEXT NOT NULL,
+  customer_whatsapp TEXT NOT NULL,
+  delivery_type TEXT NOT NULL DEFAULT 'delivery',
+  neighborhood_id TEXT,
+  neighborhood_name TEXT,
+  address TEXT,
+  address_number TEXT,
+  complement TEXT,
+  reference TEXT,
+  delivery_fee DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  subtotal DECIMAL(10, 2) NOT NULL,
+  total DECIMAL(10, 2) NOT NULL,
+  payment_method TEXT NOT NULL,
+  payment_details JSONB,
+  items JSONB NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_neighborhood ON orders(neighborhood_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/auth";
-import { checkMercadoPagoPaymentStatus, getBillingStatus } from "@/services/billing";
+import { checkAbacatePayPaymentStatus, getBillingStatus } from "@/services/billing";
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const billingStatus = await getBillingStatus();
     const monthRef = body.monthRef || billingStatus.dueMonthRef;
 
-    const isPaid = await checkMercadoPagoPaymentStatus(monthRef);
+    const isPaid = await checkAbacatePayPaymentStatus(monthRef);
     const updatedStatus = await getBillingStatus();
 
     return NextResponse.json({
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
       status: updatedStatus.status,
     });
   } catch (error: unknown) {
-    console.error("Erro ao verificar pagamento:", error);
-    const message = error instanceof Error ? error.message : "Erro ao consultar status no Mercado Pago";
+    console.error("Erro ao verificar pagamento AbacatePay:", error);
+    const message = error instanceof Error ? error.message : "Erro ao consultar status no AbacatePay";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
