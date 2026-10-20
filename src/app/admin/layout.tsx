@@ -1,6 +1,5 @@
 import { isAdminAuthenticated } from "@/lib/auth";
 import { getBillingStatus } from "@/services/billing";
-import { PaymentBlockedScreen } from "@/components/admin/payment-blocked-screen";
 import { PaymentWarningBanner } from "@/components/admin/payment-warning-banner";
 import { AdminShell } from "@/components/admin/admin-shell";
 
@@ -21,14 +20,15 @@ export default async function AdminLayout({
   // Verifica o status de faturamento da plataforma
   const billingStatus = await getBillingStatus();
 
-  // Se hoje for dia 21 em diante e a fatura não estiver paga, bloqueia todo o painel admin
-  if (billingStatus.isBlocked) {
-    return <PaymentBlockedScreen billing={billingStatus} />;
-  }
+  // O painel NUNCA é bloqueado, mesmo em caso de atraso ou demora para pagar.
+  // Apenas exibimos o banner informativo para permitir pagamento fácil via PIX.
+  const showPaymentBanner =
+    billingStatus.status !== "paid" &&
+    (billingStatus.isWarningPeriod || billingStatus.isOverdue || billingStatus.daysOverdue > 0);
 
   return (
     <AdminShell billingStatus={billingStatus}>
-      {billingStatus.isWarningPeriod && (
+      {showPaymentBanner && (
         <div className="mb-6">
           <PaymentWarningBanner billing={billingStatus} />
         </div>

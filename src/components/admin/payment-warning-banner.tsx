@@ -48,13 +48,23 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
     }
   };
 
+  const isOverdue = Boolean(billing.isOverdue || billing.daysOverdue > 0);
+
   if (isMinimized) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-900 shadow-xs mb-6">
         <div className="flex items-center gap-2 font-medium">
           <Clock className="h-4 w-4 text-amber-600 shrink-0" />
           <span>
-            Mensalidade da plataforma vence dia <strong>{billing.dueDateFormatted}</strong> (R$ 60,00).
+            {isOverdue ? (
+              <>
+                Mensalidade de manutenção em aberto desde <strong>{billing.dueDateFormatted}</strong> (R$ 60,00). Painel 100% liberado.
+              </>
+            ) : (
+              <>
+                Mensalidade da plataforma vence dia <strong>{billing.dueDateFormatted}</strong> (R$ 60,00).
+              </>
+            )}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -83,17 +93,25 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
         <div className="space-y-1 max-w-xl">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-0.5 text-[11px] font-bold text-white">
-              <Clock className="h-3 w-3" /> Lembrete de Vencimento
+              <Clock className="h-3 w-3" /> {isOverdue ? "Mensalidade em Aberto" : "Lembrete de Vencimento"}
             </span>
             <span className="text-xs font-semibold text-amber-900">
-              Vence em {billing.dueDateFormatted}
+              {isOverdue ? `Venceu em ${billing.dueDateFormatted}` : `Vence em ${billing.dueDateFormatted}`}
             </span>
           </div>
           <h3 className="text-sm sm:text-base font-bold text-slate-900">
             Mensalidade de Suporte & Manutenção da Loja (R$ 60,00)
           </h3>
           <p className="text-xs text-slate-600">
-            A fatura deste mês vence dia <strong>20</strong>. Pague antecipadamente com PIX via AbacatePay para garantir o funcionamento contínuo do seu painel.
+            {isOverdue ? (
+              <>
+                A fatura mensal está pendente, mas seu painel administrativo e a loja continuam <strong>100% liberados e funcionando</strong> sem interrupções. Efetue o pagamento via PIX quando puder.
+              </>
+            ) : (
+              <>
+                A fatura deste mês vence dia <strong>20</strong>. Pague antecipadamente com PIX via AbacatePay para manter sua conta em dia.
+              </>
+            )}
           </p>
         </div>
 

@@ -174,7 +174,7 @@ export function AtlasLicenseClient({ billing }: AtlasLicenseClientProps) {
           <p className="text-base font-bold text-slate-900 flex items-center gap-1.5">
             <Calendar className="h-4 w-4 text-rose-600" /> Todo dia 20
           </p>
-          <p className="text-[11px] text-slate-500">Trava automática no dia 21</p>
+          <p className="text-[11px] text-slate-500">Sem bloqueio do painel</p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4.5 space-y-1 shadow-xs">

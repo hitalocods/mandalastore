@@ -15,6 +15,7 @@ export interface BillingRecord {
 export interface BillingStatus {
   isBlocked: boolean;
   isWarningPeriod: boolean;
+  isOverdue?: boolean;
   currentMonthRef: string;
   dueMonthRef: string;
   status: "pending" | "paid";
@@ -169,10 +170,9 @@ export async function getBillingStatus(): Promise<BillingStatus> {
   const currentMonthRef = formatMonthRef(year, month);
   const dueDay = Number(process.env.SYSTEM_PAYMENT_DUE_DAY) || DUE_DAY;
 
-  // Se hoje for até dia 20: o mês atual vence dia 20.
-  // O que já DEVERIA estar pago para não bloquear é o mês anterior (se hoje for até dia 20).
-  // Porém, a partir do dia 21: o mês ATUAL já deveria estar pago! Se não estiver, BLOQUEIA.
-  let isBlocked = false;
+  // O painel NUNCA é bloqueado por atraso no pagamento (isBlocked permanece false).
+  // Apenas calculamos os dias de atraso e período de aviso para exibir lembrete no painel.
+  const isBlocked = false;
   let isWarningPeriod = false;
   let dueMonthRef = currentMonthRef;
   let targetYear = year;
@@ -181,19 +181,13 @@ export async function getBillingStatus(): Promise<BillingStatus> {
   let daysOverdue = 0;
 
   if (day >= dueDay + 1) {
-    // Dia 21 em diante: o mês corrente já venceu no dia 20.
+    // Dia 21 em diante: o mês corrente já passou do dia 20.
     dueMonthRef = currentMonthRef;
     targetYear = year;
     targetMonth = month;
     daysOverdue = day - dueDay;
-
-    const billing = await getOrCreateMonthBilling(dueMonthRef, targetYear, targetMonth, dueDay);
-    if (billing.status !== "paid") {
-      isBlocked = true;
-    }
   } else {
     // Dia 1 até dia 20:
-    // O mês corrente ainda não venceu (faltam X dias).
     daysUntilDue = dueDay - day;
     dueMonthRef = currentMonthRef;
     targetYear = year;
@@ -201,23 +195,18 @@ export async function getBillingStatus(): Promise<BillingStatus> {
 
     // Se estiver entre os dias 15 e 20, ativa o período de aviso prévio
     if (day >= 15 && day <= dueDay) {
-      const currentBilling = await getOrCreateMonthBilling(dueMonthRef, targetYear, targetMonth, dueDay);
-      if (currentBilling.status !== "paid") {
-        isWarningPeriod = true;
-      }
+      isWarningPeriod = true;
     }
 
-    // Verifica se o mês anterior ficou inadimplente
+    // Verifica se o mês anterior ficou pendente
     const prevMonthRef = getPreviousMonthRef(year, month);
-    // Checa se existe registro pendente para o mês anterior
     try {
       const prevRows = await sql`
         SELECT status FROM system_billing WHERE month_reference = ${prevMonthRef} LIMIT 1
       `;
       if (prevRows.length > 0 && prevRows[0].status === "pending") {
-        isBlocked = true;
         dueMonthRef = prevMonthRef;
-        daysOverdue = day + 10; // dias decorridos desde o dia 20 do mês passado
+        daysOverdue = day + 10;
       }
     } catch {
       // Ignora erro de consulta do mês anterior
@@ -225,12 +214,20 @@ export async function getBillingStatus(): Promise<BillingStatus> {
   }
 
   const activeBilling = await getOrCreateMonthBilling(dueMonthRef, targetYear, targetMonth, dueDay);
+  const isOverdue = daysOverdue > 0 && activeBilling.status !== "paid";
+
+  if (activeBilling.status === "paid") {
+    isWarningPeriod = false;
+  } else if (isOverdue) {
+    isWarningPeriod = true;
+  }
 
   const dueDateFormatted = `${String(dueDay).padStart(2, "0")}/${String(targetMonth).padStart(2, "0")}/${targetYear}`;
 
   return {
     isBlocked,
     isWarningPeriod,
+    isOverdue,
     currentMonthRef,
     dueMonthRef,
     status: activeBilling.status,
