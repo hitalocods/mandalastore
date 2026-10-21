@@ -13,16 +13,20 @@ import { parseSizeVariants, serializeSizeVariants } from "@/lib/size-variants";
 import { compressImage } from "@/lib/image-compression";
 import { categories as defaultCategories, type Product, type SizeVariant } from "@/types/product";
 
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // Aceita fotos de até 20MB pois serão comprimidas automaticamente no navegador
-
 function isValidImage(file: File) {
-  if (!ACCEPTED_TYPES.includes(file.type)) {
-    return "Use apenas arquivos JPG, PNG ou WEBP.";
+  const fileName = (file.name || "").toLowerCase();
+  const mime = (file.type || "").toLowerCase();
+
+  // Aceita formatos de imagem comuns e nativos de celular (JPEG, PNG, WEBP, HEIC, HEIF, JFIF, BMP)
+  const isImageMime = mime.startsWith("image/");
+  const hasImageExt = /\.(jpg|jpeg|png|webp|heic|heif|jfif|bmp)$/i.test(fileName);
+
+  if (!isImageMime && !hasImageExt) {
+    return "Selecione um arquivo de foto válido (JPG, PNG, WEBP ou da galeria).";
   }
 
-  if (file.size > MAX_IMAGE_SIZE) {
-    return "A imagem precisa ter no máximo 20 MB.";
+  if (file.size > 30 * 1024 * 1024) {
+    return "A imagem precisa ter no máximo 30 MB.";
   }
 
   return null;
@@ -215,47 +219,47 @@ export function ProductForm({
 
         startTransition(async () => {
           try {
-            if (product) {
-              await updateProduct(formData);
-              toast.success("Produto atualizado com sucesso!");
-            } else {
-              if (totalImagesCount === 0) {
-                toast.error("Por favor, adicione pelo menos uma foto para o produto.");
+            if (!product && totalImagesCount === 0) {
+              toast.error("Por favor, adicione pelo menos uma foto para o produto.");
+              return;
+            }
+
+            const result = product
+              ? await updateProduct(formData)
+              : await createProduct(formData);
+
+            if (!result.success) {
+              if (result.isSessionExpired) {
+                toast.error("Sua sessão expirou. Redirecionando para login...");
+                setTimeout(() => {
+                  window.location.href = "/admin/login";
+                }, 1200);
                 return;
               }
-              await createProduct(formData);
-              toast.success("Produto cadastrado com sucesso!");
+              toast.error(result.error || "Falha ao salvar produto.");
+              return;
             }
+
+            toast.success(product ? "Produto atualizado com sucesso!" : "Produto cadastrado com sucesso!");
             if (onSuccess) onSuccess();
           } catch (error: unknown) {
-            const err = error as { message?: string; digest?: string };
+            console.error("Erro inesperado ao salvar produto:", error);
+            const err = error as { message?: string };
             const msg = err?.message || "";
-            const digest = err?.digest || "";
 
-            const isSessionExpired =
-              msg === "UNAUTHORIZED_SESSION_EXPIRED" ||
-              msg === "NEXT_REDIRECT" ||
-              digest.startsWith("NEXT_REDIRECT") ||
-              msg.toLowerCase().includes("sessão expirou");
-
-            if (isSessionExpired) {
-              toast.error("Sua sessão expirou. Redirecionando para a página de login...");
+            if (msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("sessão")) {
+              toast.error("Sua sessão expirou. Redirecionando para login...");
               setTimeout(() => {
                 window.location.href = "/admin/login";
               }, 1200);
               return;
             }
 
-            if (
-              msg.includes("unexpected response") ||
-              msg.includes("Failed to fetch") ||
-              msg.includes("NetworkError")
-            ) {
-              toast.error("Erro de conexão com o servidor. Verifique sua internet ou tente novamente.");
-              return;
-            }
-
-            toast.error(msg || "Falha ao salvar produto");
+            toast.error(
+              msg && !msg.includes("Server Components render")
+                ? msg
+                : "Não foi possível salvar as alterações. Verifique sua conexão e tente novamente."
+            );
           }
         });
       }}
@@ -545,7 +549,7 @@ export function ProductForm({
                 id={product ? `images-${product.id}` : "images"}
                 type="file"
                 multiple
-                accept=".jpg,.jpeg,.png,.webp"
+                accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif"
                 className="sr-only"
                 onChange={handleFilesChange}
               />

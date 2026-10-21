@@ -9,29 +9,61 @@ export async function compressImage(
   maxDimension = 1600,
   quality = 0.82
 ): Promise<File> {
-  // Ignora arquivos que não sejam imagens comuns ou que já sejam muito leves
-  if (!file.type.startsWith("image/") || file.type === "image/svg+xml" || file.type === "image/gif") {
+  const fileName = (file.name || "").toLowerCase();
+
+  // Fotos HEIC/HEIF de iPhones: o canvas do navegador não consegue decodificar nativamente.
+  // Enviamos direto para o Cloudinary, que converte HEIC com perfeição na nuvem.
+  if (
+    file.type.includes("heic") ||
+    file.type.includes("heif") ||
+    fileName.endsWith(".heic") ||
+    fileName.endsWith(".heif")
+  ) {
     return file;
   }
 
-  // Se o arquivo for menor que 200 KB, já está leve o bastante
-  if (file.size < 200 * 1024) {
+  // Se o arquivo for menor que 200 KB ou não for imagem comum, já está leve o suficiente
+  if (
+    file.size < 200 * 1024 ||
+    file.type === "image/svg+xml" ||
+    file.type === "image/gif"
+  ) {
     return file;
   }
 
   return new Promise((resolve) => {
+    let hasResolved = false;
+    const safeResolve = (result: File) => {
+      if (!hasResolved) {
+        hasResolved = true;
+        resolve(result);
+      }
+    };
+
+    // Timeout de segurança de 4 segundos para nunca travar o upload no celular
+    const timer = setTimeout(() => {
+      safeResolve(file);
+    }, 4000);
+
     try {
       const reader = new FileReader();
-      reader.onerror = () => resolve(file);
+      reader.onerror = () => {
+        clearTimeout(timer);
+        safeResolve(file);
+      };
       reader.onload = (event) => {
         const dataUrl = event.target?.result;
         if (typeof dataUrl !== "string") {
-          resolve(file);
+          clearTimeout(timer);
+          safeResolve(file);
           return;
         }
 
         const img = new Image();
-        img.onerror = () => resolve(file);
+        img.onerror = () => {
+          clearTimeout(timer);
+          safeResolve(file);
+        };
         img.onload = () => {
           try {
             let { width, height } = img;
@@ -53,7 +85,8 @@ export async function compressImage(
 
             const ctx = canvas.getContext("2d");
             if (!ctx) {
-              resolve(file);
+              clearTimeout(timer);
+              safeResolve(file);
               return;
             }
 
@@ -70,25 +103,30 @@ export async function compressImage(
 
             canvas.toBlob(
               (blob) => {
+                clearTimeout(timer);
                 if (!blob || blob.size >= file.size) {
-                  // Se a conversão por algum motivo ficou maior ou nula, preserva o original
-                  resolve(file);
+                  safeResolve(file);
                   return;
                 }
 
-                const baseName = file.name.replace(/\.[^/.]+$/, "");
-                const compressedFile = new File([blob], `${baseName}${targetExt}`, {
-                  type: targetMime,
-                  lastModified: Date.now(),
-                });
-
-                resolve(compressedFile);
+                try {
+                  const baseName = file.name.replace(/\.[^/.]+$/, "");
+                  const compressedFile = new File([blob], `${baseName}${targetExt}`, {
+                    type: targetMime,
+                    lastModified: Date.now(),
+                  });
+                  safeResolve(compressedFile);
+                } catch {
+                  // Fallback se o navegador mobile não permitir construtor new File
+                  safeResolve(file);
+                }
               },
               targetMime,
               quality
             );
           } catch {
-            resolve(file);
+            clearTimeout(timer);
+            safeResolve(file);
           }
         };
 
@@ -97,7 +135,8 @@ export async function compressImage(
 
       reader.readAsDataURL(file);
     } catch {
-      resolve(file);
+      clearTimeout(timer);
+      safeResolve(file);
     }
   });
 }

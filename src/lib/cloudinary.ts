@@ -8,6 +8,16 @@ cloudinary.config({
 });
 
 export async function uploadImageToCloudinary(file: File): Promise<string> {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error(
+      "Credenciais do Cloudinary ausentes nas variáveis de ambiente. Verifique CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY e CLOUDINARY_API_SECRET."
+    );
+  }
+
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
@@ -15,6 +25,7 @@ export async function uploadImageToCloudinary(file: File): Promise<string> {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: "mandala-prime/products",
+        resource_type: "auto",
         transformation: [
           {
             width: 1200,
@@ -27,7 +38,11 @@ export async function uploadImageToCloudinary(file: File): Promise<string> {
       (error, result: UploadApiResponse | undefined) => {
         if (error || !result) {
           console.error("Cloudinary upload error:", error);
-          return reject(error || new Error("Erro ao fazer upload para Cloudinary"));
+          return reject(
+            new Error(
+              error?.message || "Não foi possível enviar a foto para o Cloudinary."
+            )
+          );
         }
         resolve(result.secure_url);
       }

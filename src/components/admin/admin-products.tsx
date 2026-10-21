@@ -157,7 +157,15 @@ export function AdminProducts({
                   </SheetContent>
                 </Sheet>
 
-                <form action={deleteProduct} onSubmit={(e) => !confirm("Excluir este produto?") && e.preventDefault()}>
+                <form
+                  action={async (formData) => {
+                    const res = await deleteProduct(formData);
+                    if (!res.success) {
+                      alert(res.error || "Erro ao excluir produto.");
+                    }
+                  }}
+                  onSubmit={(e) => !confirm("Excluir este produto?") && e.preventDefault()}
+                >
                   <input type="hidden" name="id" value={product.id} />
                   <Button
                     size="icon"
