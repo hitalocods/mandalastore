@@ -1,4 +1,3 @@
-import { isAdminAuthenticated } from "@/lib/auth";
 import { getBillingStatus } from "@/services/billing";
 import { PaymentWarningBanner } from "@/components/admin/payment-warning-banner";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -10,13 +9,6 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const isAdmin = await isAdminAuthenticated();
-
-  // Se não estiver autenticado (ex: na tela /admin/login), deixa passar para o formulário de login
-  if (!isAdmin) {
-    return <>{children}</>;
-  }
-
   // Verifica o status de faturamento da plataforma
   const billingStatus = await getBillingStatus();
 

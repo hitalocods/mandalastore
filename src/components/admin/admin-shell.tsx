@@ -121,10 +121,12 @@ export function AdminShell({ children, billingStatus }: AdminShellProps) {
         />
       )}
 
-      {/* Sidebar (Desktop fixo / Mobile deslizante) */}
+      {/* Sidebar (Desktop fixo permanente / Mobile gaveta deslizante) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200/80 bg-white transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
-          isMobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex-col border-r border-slate-200/80 bg-white lg:static lg:z-30 lg:h-screen lg:sticky lg:top-0 lg:shrink-0 lg:flex ${
+          isMobileMenuOpen
+            ? "flex translate-x-0 shadow-2xl transition-transform duration-300"
+            : "hidden lg:flex"
         }`}
       >
         {/* Topo da Sidebar: Logo & Identidade */}
