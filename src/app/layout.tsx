@@ -16,7 +16,18 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body>
         {children}
-        <Toaster richColors position="top-center" />
+        <Toaster
+          richColors
+          position="top-center"
+          toastOptions={{
+            style: {
+              maxWidth: "240px",
+              width: "auto",
+              fontSize: "12px",
+              padding: "8px 12px",
+            },
+          }}
+        />
       </body>
     </html>
   );

@@ -55,7 +55,7 @@ export function ProductCard({ product }: { product: Product }) {
     }
 
     addItem(product, undefined, undefined, product.price);
-    toast.success("Produto adicionado ao carrinho!");
+    toast.success("Adicionado ao carrinho!");
   };
 
   const handleOpenModal = () => {
@@ -86,7 +86,7 @@ export function ProductCard({ product }: { product: Product }) {
     if (details.length > 0) {
       toast.success(`Produto adicionado! (${details.join(" • ")})`);
     } else {
-      toast.success("Produto adicionado ao carrinho!");
+      toast.success("Adicionado ao carrinho!");
     }
     setModalOpen(false);
   };

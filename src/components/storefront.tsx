@@ -7,6 +7,8 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { CartDrawer } from "@/components/cart-drawer";
 import { ProductCard } from "@/components/product-card";
 import { SiteHeader } from "@/components/site-header";
+import { CategoryGallery } from "@/components/category-gallery";
+import { WhatsAppButton } from "@/components/whatsapp-button";
 import { useProductFilter } from "@/hooks/use-product-filter";
 import { CartProvider } from "@/store/cart-store";
 import { categories as defaultCategories } from "@/types/product";
@@ -24,7 +26,13 @@ export function Storefront({
   categoriesTree?: CategoryWithChildren[];
 }) {
   const [cartOpen, setCartOpen] = useState(false);
-  const { activeCategory, filteredProducts, setActiveCategory } = useProductFilter(products, categoriesTree);
+  const {
+    activeCategory,
+    filteredProducts,
+    setActiveCategory,
+    searchQuery,
+    setSearchQuery,
+  } = useProductFilter(products, categoriesTree);
 
   return (
     <CartProvider>
@@ -33,6 +41,8 @@ export function Storefront({
         categoriesTree={categoriesTree}
         activeCategory={activeCategory}
         onSelectCategory={setActiveCategory}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
       <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#fdf3f3] via-[#fff9f8] to-[#faf8f7]">
         {/* Soft atmospheric gradient glow at the top / hero */}
@@ -49,8 +59,9 @@ export function Storefront({
           className="pointer-events-none absolute top-40 left-[-10%] w-[450px] h-[450px] bg-[radial-gradient(circle,rgba(212,175,55,0.06),transparent_70%)] blur-3xl -z-10"
         />
 
-        <section className="mx-auto grid max-w-7xl items-center gap-8 px-3 pb-8 pt-6 sm:px-6 sm:pb-12 sm:pt-10 lg:grid-cols-[1fr_1.15fr] lg:gap-12 lg:px-8 lg:pb-16 lg:pt-14">
-          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex flex-col justify-center">
+        {/* Hero Section */}
+        <section className="mx-auto grid max-w-7xl items-center gap-4 px-3 pb-3 pt-2 sm:gap-8 sm:px-6 sm:pb-10 sm:pt-8 lg:grid-cols-[1fr_1.15fr] lg:gap-12 lg:px-8 lg:pb-12 lg:pt-10">
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="hidden sm:flex flex-col justify-center">
             <div className="inline-flex items-center gap-2 mb-3 sm:mb-4">
               <span className="h-1.5 w-1.5 rounded-full bg-[#cc0000] animate-pulse" />
               <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-foreground/75 sm:text-xs">
@@ -102,7 +113,7 @@ export function Storefront({
           </motion.div>
         </section>
 
-        {/* Categories Bar: Visible only on desktop/notebook (sm:block) with hover subcategory dropdowns */}
+        {/* Categories Bar: Visible on desktop/tablet with subcategory dropdowns */}
         <section id="categories" className="hidden sm:block mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 z-30 relative">
           <div className="flex flex-wrap items-center gap-2.5 pb-2 overflow-visible">
             {/* "Todos" Pill */}
@@ -221,27 +232,62 @@ export function Storefront({
           </div>
         </section>
 
-        <section id="products" className="mx-auto max-w-7xl px-3 pb-20 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+        {/* Galeria Visual de Fotos de Categorias acima de Lançamentos */}
+        <CategoryGallery
+          categoriesTree={categoriesTree}
+          products={products}
+          activeCategory={activeCategory}
+          onSelectCategory={setActiveCategory}
+        />
+
+        {/* Seção de Produtos (Lançamentos / Catálogo) com Mix Variado */}
+        <section id="products" className="mx-auto max-w-7xl px-3 pb-24 pt-2 sm:px-6 sm:pt-4 lg:px-8">
           <div className="mb-5 flex items-end justify-between gap-4 sm:mb-8">
             <div>
               <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground sm:text-xs">
                 {filteredProducts.length} itens encontrados
               </p>
-              <h2 className="mt-1 text-xl font-bold tracking-tight text-foreground sm:mt-2 sm:text-2xl">
-                {activeCategory === "Todos" ? "Catálogo Completo" : activeCategory}
+              <h2 className="mt-1 text-xl font-black uppercase tracking-wider text-foreground sm:mt-2 sm:text-2xl">
+                {searchQuery
+                  ? `Busca: "${searchQuery}"`
+                  : activeCategory === "Todos"
+                  ? "Lançamentos"
+                  : activeCategory}
               </h2>
             </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="text-xs text-[#cc0000] hover:underline font-semibold cursor-pointer"
+              >
+                Limpar busca
+              </button>
+            )}
           </div>
-          <motion.div layout className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-            <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </AnimatePresence>
-          </motion.div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="py-16 text-center rounded-2xl border border-dashed border-border/70 bg-white/50 dark:bg-zinc-900/50 p-8">
+              <p className="text-base font-semibold text-foreground">Nenhum produto encontrado.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Tente buscar por outro termo ou selecione uma categoria diferente acima.
+              </p>
+            </div>
+          ) : (
+            <motion.div layout className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+              <AnimatePresence mode="popLayout">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
         </section>
       </main>
 
+      {/* Botão Flutuante do WhatsApp */}
+      <WhatsAppButton />
+
+      {/* Gaveta do Carrinho */}
       <CartDrawer open={cartOpen} onOpenChange={setCartOpen} neighborhoods={neighborhoods} />
     </CartProvider>
   );

@@ -173,11 +173,11 @@ export async function updateProduct(formData: FormData): Promise<ProductActionRe
     const mainImageUrl = finalImagesList[0] || null;
     const allImagesStr = finalImagesList.length > 0 ? finalImagesList.join(",") : null;
 
-    // Cleanup removed images from Cloudinary em background seguro
+    // Guarda as fotos antigas para limpar SOMENTE depois de salvar com sucesso
+    let oldImages: string[] = [];
     try {
       const oldProduct = await sql`SELECT image_url, images FROM products WHERE id = ${id}`;
       if (oldProduct.length > 0) {
-        const oldImages: string[] = [];
         if (oldProduct[0].image_url) oldImages.push(oldProduct[0].image_url as string);
         if (oldProduct[0].images) {
           (oldProduct[0].images as string).split(",").forEach((url) => {
@@ -185,15 +185,10 @@ export async function updateProduct(formData: FormData): Promise<ProductActionRe
             if (trimmed && !oldImages.includes(trimmed)) oldImages.push(trimmed);
           });
         }
-
-        for (const oldUrl of oldImages) {
-          if (!finalImagesList.includes(oldUrl)) {
-            await deleteImageFromCloudinary(oldUrl).catch(() => {});
-          }
-        }
       }
     } catch (err) {
-      console.error("Erro ao verificar imagens antigas para exclusão:", err);
+      console.error("Erro ao ler imagens antigas:", err);
+      oldImages = [];
     }
 
     const sizes = getSizes(formData);
@@ -213,6 +208,13 @@ export async function updateProduct(formData: FormData): Promise<ProductActionRe
         images = ${allImagesStr}
       WHERE id = ${id}
     `;
+
+    // Banco salvo com sucesso: agora sim remove do Cloudinary as fotos que saíram
+    for (const oldUrl of oldImages) {
+      if (!finalImagesList.includes(oldUrl)) {
+        await deleteImageFromCloudinary(oldUrl).catch(() => {});
+      }
+    }
 
     try {
       revalidatePath("/");

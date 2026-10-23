@@ -9,6 +9,7 @@ import { useCart } from "@/store/cart-store";
 import { CheckoutForm } from "@/components/checkout-form";
 import type { CheckoutData } from "@/types/checkout";
 import type { Neighborhood } from "@/types/neighborhood";
+import { SITE_CONFIG } from "@/lib/site-config";
 
 type CartDrawerProps = {
   open: boolean;
@@ -30,7 +31,7 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
 
   const formatWhatsAppMessage = (data: CheckoutData, deliveryFee: number) => {
     const total = subtotal + deliveryFee;
-    const deliveryTypeText = data.deliveryType === "pickup" ? "Retirada" : "Entrega";
+    const isDelivery = data.deliveryType === "delivery";
     const paymentMethodText = {
       money: "Dinheiro",
       pix: "Pix",
@@ -38,41 +39,72 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
       credit: "Cartão de Crédito",
     }[data.paymentMethod];
 
-    let message = `🛒 NOVO PEDIDO\n\n--------------------------------\n\nTipo:\n${deliveryTypeText}\n\n--------------------------------\n\nCliente\n\nNome:\n${data.fullName}\n\nWhatsApp:\n${data.whatsapp}\n\n--------------------------------\n\nItens\n\n`;
+    let paymentDetails = paymentMethodText;
+    if (data.paymentMethod === "credit" && data.installments) {
+      paymentDetails += ` (${data.installments}x)`;
+    } else if (data.paymentMethod === "money") {
+      if (data.needsChange && data.changeFor) {
+        paymentDetails += ` (Troco para ${formatCurrency(Number(data.changeFor))})`;
+      } else {
+        paymentDetails += " (Não precisa de troco)";
+      }
+    }
 
+    const lines: string[] = [];
+
+    lines.push(`*NOVO PEDIDO — ${SITE_CONFIG.name.toUpperCase()}*`);
+    lines.push("----------------------------------------");
+    lines.push("");
+
+    // Cliente
+    lines.push("*CLIENTE*");
+    lines.push(`• *Nome:* ${data.fullName}`);
+    lines.push(`• *WhatsApp:* ${data.whatsapp}`);
+    lines.push(`• *Recebimento:* ${isDelivery ? "Entrega" : "Retirada no Local"}`);
+    lines.push("");
+
+    // Endereço de entrega (se aplicável)
+    if (isDelivery) {
+      const neighborhood = neighborhoods.find((n: Neighborhood) => n.id === data.neighborhoodId);
+      lines.push("*ENDEREÇO DE ENTREGA*");
+      if (neighborhood?.name) lines.push(`• *Bairro:* ${neighborhood.name}`);
+      lines.push(`• *Endereço:* ${data.address}, Nº ${data.number}`);
+      if (data.complement && data.complement.trim()) {
+        lines.push(`• *Complemento:* ${data.complement.trim()}`);
+      }
+      if (data.reference && data.reference.trim()) {
+        lines.push(`• *Referência:* ${data.reference.trim()}`);
+      }
+      lines.push("• *Forma de Envio:* Moto Táxi da Loja");
+      lines.push("");
+    }
+
+    // Itens
+    lines.push("*ITENS DO PEDIDO*");
     items.forEach((item) => {
       const itemPrice = item.selectedPrice ?? item.product.price;
       const details: string[] = [];
-      if (item.selectedSize) details.push(`Tamanho: ${item.selectedSize}`);
+      if (item.selectedSize) details.push(`Tam: ${item.selectedSize}`);
       if (item.selectedColor) details.push(`Cor: ${item.selectedColor}`);
       const detailsText = details.length > 0 ? ` (${details.join(", ")})` : "";
-      message += `${item.quantity}x ${item.product.name}${detailsText} — ${formatCurrency(itemPrice)} cada\n`;
+      const itemTotal = formatCurrency(itemPrice * item.quantity);
+      lines.push(`• ${item.quantity}x ${item.product.name}${detailsText} — *${itemTotal}*`);
     });
+    lines.push("");
 
-    message += `\n--------------------------------\n\nSubtotal\n\n${formatCurrency(subtotal)}\n\n`;
-
+    // Valores e Pagamento
+    lines.push("*PAGAMENTO & VALORES*");
+    lines.push(`• *Forma de Pagamento:* ${paymentDetails}`);
+    lines.push(`• *Subtotal:* ${formatCurrency(subtotal)}`);
     if (deliveryFee > 0) {
-      message += `Taxa de entrega\n\n${formatCurrency(deliveryFee)}\n\n`;
+      lines.push(`• *Taxa de Entrega:* ${formatCurrency(deliveryFee)}`);
     }
+    lines.push(`• *TOTAL DO PEDIDO:* *${formatCurrency(total)}*`);
+    lines.push("");
+    lines.push("----------------------------------------");
+    lines.push("_Pedido realizado pelo site oficial._");
 
-    message += `Total\n\n${formatCurrency(total)}\n\n--------------------------------\n\nPagamento\n\n${paymentMethodText}\n\n`;
-
-    if (data.paymentMethod === "credit" && data.installments) {
-      message += `${data.installments}x\n\n`;
-    }
-
-    if (data.paymentMethod === "money" && data.needsChange && data.changeFor) {
-      message += `Troco para ${formatCurrency(Number(data.changeFor))}\n\n`;
-    }
-
-    if (data.deliveryType === "delivery") {
-      const neighborhood = neighborhoods.find((n: Neighborhood) => n.id === data.neighborhoodId);
-      message += `--------------------------------\n\nSe entrega:\n\nBairro:\n${neighborhood?.name || ""}\n\nEndereço:\n${data.address}\n\nNúmero:\n${data.number}\n\nComplemento:\n${data.complement || ""}\n\nReferência:\n${data.reference || ""}\n\nEntrega:\nMoto Táxi da Loja\n\n`;
-    }
-
-    message += `--------------------------------\n\nPedido realizado pelo site.`;
-
-    return encodeURIComponent(message);
+    return encodeURIComponent(lines.join("\n"));
   };
 
   const finishOrder = async (data: CheckoutData, deliveryFee: number) => {
@@ -118,8 +150,8 @@ export function CartDrawer({ open, onOpenChange, neighborhoods }: CartDrawerProp
     }
 
     const message = formatWhatsAppMessage(data, deliveryFee);
-    const phone = "5586988269144";
-    window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener,noreferrer");
+    const phone = SITE_CONFIG.whatsappNumber;
+    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${message}`, "_blank", "noopener,noreferrer");
     clearCart();
     setShowCheckout(false);
     onOpenChange(false);

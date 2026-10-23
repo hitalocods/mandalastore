@@ -16,9 +16,26 @@ export async function ensureCategoriesTable() {
         parent_id TEXT REFERENCES categories(id) ON DELETE CASCADE,
         slug TEXT UNIQUE,
         sort_order INTEGER NOT NULL DEFAULT 0,
+        image_url TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `;
+
+    await sql`
+      ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT;
+    `;
+
+    // Coluna da vitrine "ITENS". Na primeira vez, só as categorias principais
+    // ficam ligadas (mantém a loja igual a antes até a dona mexer).
+    const galleryCol = await sql`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'categories' AND column_name = 'show_in_gallery'
+    `;
+    if (galleryCol.length === 0) {
+      await sql`
+        ALTER TABLE categories ADD COLUMN IF NOT EXISTS show_in_gallery BOOLEAN NOT NULL DEFAULT FALSE;
+      `;
+    }
 
     await sql`
       CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id)
@@ -60,8 +77,10 @@ export async function getCategories(): Promise<CategoryWithChildren[]> {
   noStore();
 
   try {
+    await ensureCategoriesTable();
+
     const rows = (await sql`
-      SELECT id, name, parent_id, slug, sort_order, created_at
+      SELECT id, name, parent_id, slug, sort_order, image_url, show_in_gallery, created_at
       FROM categories
       ORDER BY sort_order ASC, name ASC
     `) as Category[];
@@ -96,8 +115,10 @@ export async function getAllFlatCategories(): Promise<Category[]> {
   noStore();
 
   try {
+    await ensureCategoriesTable();
+
     const rows = (await sql`
-      SELECT id, name, parent_id, slug, sort_order, created_at
+      SELECT id, name, parent_id, slug, sort_order, image_url, show_in_gallery, created_at
       FROM categories
       ORDER BY name ASC
     `) as Category[];

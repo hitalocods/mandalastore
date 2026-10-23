@@ -98,3 +98,28 @@ select {
   background: #d4af37;
   border-radius: 999px;
 }
+
+/* Notificação compacta do carrinho para não tampar o ícone do carrinho no topo */
+[data-sonner-toaster] {
+  --width: 240px !important;
+  max-width: calc(100vw - 110px) !important;
+}
+
+[data-sonner-toast] {
+  max-width: 240px !important;
+  width: auto !important;
+  font-size: 0.75rem !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+}
+
+@media (max-width: 640px) {
+  [data-sonner-toaster] {
+    --width: 220px !important;
+    max-width: calc(100vw - 120px) !important;
+  }
+  [data-sonner-toast] {
+    max-width: 220px !important;
+  }
+}
+
