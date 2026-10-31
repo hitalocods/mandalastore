@@ -24,11 +24,11 @@ const FALLBACK_CATEGORY_IMAGES: Record<string, string> = {
   baralhos: "/produtos_mandala_prime/baralho_tarot/baralho_01.jpg",
   acessórios: "/produtos_mandala_prime/baralho_tarot/baralho_10.jpg",
   bebidas: "/banner.jpeg",
-  guias: "/logo-mandala.jpg",
-  orixás: "/mandala.jpeg",
+  guias: "/crown.jpg",
+  orixás: "/crown.jpg",
   velas: "/banner.jpeg",
   ervas: "/produtos_mandala_prime/charutos_cigarros_fumos/item_20.jpg",
-  essências: "/mandala.jpeg",
+  essências: "/crown.jpg",
 };
 
 export function CategoryGallery({
@@ -84,7 +84,7 @@ export function CategoryGallery({
       }
 
       // 3. Reserva genérica
-      list.push({ key: cat.key, name: cat.name, imageUrl: imageUrl || "/mandala.jpeg" });
+      list.push({ key: cat.key, name: cat.name, imageUrl: imageUrl || "/crown.jpg" });
     }
 
     return list;
@@ -159,8 +159,8 @@ export function CategoryGallery({
               <div
                 className={`relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden p-0.5 transition-all duration-300 ${
                   isActive
-                    ? "ring-2 ring-[#cc0000] shadow-lg shadow-[#cc0000]/25 scale-105"
-                    : "border border-border/80 bg-background hover:border-amber-500/50 hover:shadow-md"
+                    ? "ring-2 ring-[var(--red)] shadow-lg shadow-[var(--red)]/25 scale-105"
+                    : "border border-border/80 bg-background hover:border-[var(--gold)]/60 hover:shadow-md"
                 }`}
               >
                 <div className="relative h-full w-full rounded-[14px] overflow-hidden bg-muted/40 flex items-center justify-center">
@@ -170,7 +170,7 @@ export function CategoryGallery({
                     alt={item.name}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = "/mandala.jpeg";
+                      (e.currentTarget as HTMLImageElement).src = "/crown.jpg";
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-30 transition-opacity" />
@@ -179,8 +179,8 @@ export function CategoryGallery({
               <span
                 className={`mt-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-tight line-clamp-2 leading-tight transition-colors ${
                   isActive
-                    ? "text-[#cc0000]"
-                    : "text-foreground/80 group-hover:text-amber-600 dark:group-hover:text-amber-400"
+                    ? "text-[var(--red)]"
+                    : "text-foreground/80 group-hover:text-[var(--red)]"
                 }`}
               >
                 {item.name}

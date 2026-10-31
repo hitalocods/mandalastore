@@ -13,11 +13,14 @@ import {
   Tag,
   User,
   X,
+  Flame,
+  Shirt,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/store/cart-store";
 import { SITE_CONFIG } from "@/lib/site-config";
 import type { CategoryWithChildren } from "@/types/category";
+import type { StoreMode } from "@/lib/clothing";
 
 type SiteHeaderProps = {
   onCartOpen: () => void;
@@ -26,6 +29,8 @@ type SiteHeaderProps = {
   onSelectCategory?: (category: string) => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
+  currentMode?: StoreMode;
+  onSwitchMode?: () => void;
 };
 
 export function SiteHeader({
@@ -35,6 +40,8 @@ export function SiteHeader({
   onSelectCategory,
   searchQuery = "",
   onSearchChange,
+  currentMode,
+  onSwitchMode,
 }: SiteHeaderProps) {
   const { count } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -133,6 +140,28 @@ export function SiteHeader({
 
                 {/* Lista de Categorias com Rolagem */}
                 <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+                  {onSwitchMode && (
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
+                      <button
+                        onClick={() => {
+                          setMobileOpen(false);
+                          onSwitchMode();
+                        }}
+                        className="w-full flex items-center justify-between text-xs font-bold text-amber-700 dark:text-amber-300 cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-amber-500" />
+                          <span>
+                            {currentMode === "roupas"
+                              ? "Ver Artigos & Variedades"
+                              : "Ver Loja de Roupas"}
+                          </span>
+                        </span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+
                   <div>
                     <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                       <Sparkles className="h-3 w-3 text-amber-500" /> NAVEGAÇÃO
@@ -373,17 +402,46 @@ export function SiteHeader({
           </div>
         </nav>
 
-        {/* DIREITA: Carrinho Maior com Badge de Quantidade */}
-        <div className="flex items-center">
+        {/* DIREITA: Botão Trocar de Loja + Carrinho */}
+        <div className="flex items-center gap-2">
+          {onSwitchMode && (
+            <button
+              type="button"
+              onClick={onSwitchMode}
+              title="Trocar de catálogo / Escolher ambiente"
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--gold)]/40 bg-[var(--red)]/10 text-[var(--red)] hover:bg-[var(--red)]/20 px-2.5 sm:px-3 py-2 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+            >
+              {currentMode === "roupas" || currentMode === "vestuario" ? (
+                <Shirt className="h-4 w-4 text-[var(--gold)]" />
+              ) : currentMode === "imagens" ? (
+                <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+              ) : currentMode === "produtos" ? (
+                <Flame className="h-4 w-4 text-[var(--gold)]" />
+              ) : (
+                <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+              )}
+              <span className="hidden sm:inline">
+                {currentMode === "roupas" || currentMode === "vestuario"
+                  ? "Vestuário"
+                  : currentMode === "imagens"
+                  ? "Imagens"
+                  : currentMode === "produtos"
+                  ? "Produtos"
+                  : "Catálogo"}
+              </span>
+              <span className="text-[10px] text-muted-foreground font-normal sm:inline">Trocar</span>
+            </button>
+          )}
+
           <button
             type="button"
             aria-label="Carrinho de Compras"
             onClick={onCartOpen}
-            className="relative flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-slate-800 dark:text-white hover:bg-amber-500/20 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs"
+            className="relative flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl border border-[var(--gold)]/35 bg-[var(--gold)]/10 text-slate-800 dark:text-white hover:bg-[var(--gold)]/20 active:scale-95 transition-all duration-200 cursor-pointer shadow-xs"
           >
-            <ShoppingBag className="h-6 w-6 sm:h-7 sm:w-7 text-slate-900 dark:text-amber-300" />
+            <ShoppingBag className="h-6 w-6 sm:h-7 sm:w-7 text-[var(--red)] dark:text-[var(--gold-light)]" />
             {count > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#cc0000] px-1 text-[11px] font-extrabold text-white shadow-md shadow-[#cc0000]/40 animate-pulse">
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--red)] px-1 text-[11px] font-extrabold text-white shadow-md shadow-[var(--red)]/40 animate-pulse">
                 {count}
               </span>
             )}

@@ -5,8 +5,8 @@
 export const SITE_CONFIG = {
   name: "MANDALLA PRIME",
   subtitle: "Itens",
-  // A logo pode ser alterada facilmente aqui (ou substituindo a imagem /logo.png na pasta public)
-  logoUrl: "/logo.png",
+  // Logo oficial circular da Mandalla Prime
+  logoUrl: "/crown.jpg",
   // WhatsApp oficial para pedidos e atendimento
   whatsappNumber: "558699558614",
   whatsappMessage: "Olá! Vim pelo site da Mandalla Prime e gostaria de tirar uma dúvida.",
