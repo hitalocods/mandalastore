@@ -10,6 +10,7 @@ type InitialEntranceCardProps = {
   topicCounts?: {
     imagens?: number;
     vestuario?: number;
+    acessorios?: number;
     produtos?: number;
   };
   clothingCount?: number;
@@ -85,6 +86,7 @@ export function InitialEntranceCard({
   // Contadores com fallback
   const imagensCount = topicCounts?.imagens ?? 26;
   const vestuarioCount = topicCounts?.vestuario ?? clothingCount ?? 36;
+  const acessoriosCount = topicCounts?.acessorios ?? 0;
   const produtosCount = topicCounts?.produtos ?? artigosCount ?? 363;
 
   return (
@@ -210,6 +212,35 @@ export function InitialEntranceCard({
               </div>
 
               {/* Seta deslizante no hover */}
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-[var(--gold)]/30 bg-[var(--gold)]/[0.06] text-[var(--gold)] group-hover:text-[var(--gold-light)] group-hover:border-[var(--gold-light)]/75 group-hover:bg-[var(--gold)]/20 transition-all duration-300">
+                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+              </div>
+            </motion.button>
+
+            {/* Card: Acessórios */}
+            <motion.button
+              whileHover={{ scale: 1.012, y: -1.5 }}
+              whileTap={{ scale: 0.988 }}
+              onClick={() => onSelectMode("acessorios")}
+              className="group w-full relative flex items-center justify-between gap-3 sm:gap-4 overflow-hidden rounded-2xl border border-[var(--gold)]/35 hover:border-[var(--gold-light)]/75 bg-[#520000]/60 hover:bg-[#630000]/75 backdrop-blur-md p-3.5 sm:p-4 text-left shadow-md shadow-[#450000]/30 hover:shadow-[0_0_22px_rgba(201,162,39,0.25)] transition-all duration-300 cursor-pointer"
+            >
+              <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                <TopicThumb src="/topics/acessorios.jpg" alt="Acessórios" />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-cinzel text-sm sm:text-base font-bold text-[#fff3dc] group-hover:text-[var(--gold-light)] transition-colors">
+                      Acessórios
+                    </span>
+                    <span className="rounded-full border border-[var(--gold)]/35 bg-[var(--gold)]/15 px-2 py-0.5 text-[10px] font-medium text-[#fff3dc] tracking-wide uppercase">
+                      {acessoriosCount} itens
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] sm:text-xs text-[#fff3dc]/80 line-clamp-1 sm:line-clamp-none font-light">
+                    Colares, brincos, chapéus, coroas e mais
+                  </p>
+                </div>
+              </div>
+
               <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-[var(--gold)]/30 bg-[var(--gold)]/[0.06] text-[var(--gold)] group-hover:text-[var(--gold-light)] group-hover:border-[var(--gold-light)]/75 group-hover:bg-[var(--gold)]/20 transition-all duration-300">
                 <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transform group-hover:translate-x-1 transition-transform duration-300" />
               </div>

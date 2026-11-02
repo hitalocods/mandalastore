@@ -154,6 +154,8 @@ export function Storefront({
               <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-foreground/75 sm:text-xs">
                 {currentMode === "roupas" || currentMode === "vestuario"
                   ? "Vestuário Sagrado de Axé & Acessórios"
+                  : currentMode === "acessorios"
+                  ? "Acessórios, Coroas & Bijuterias"
                   : currentMode === "imagens"
                   ? "Imagens Religiosas, Batismo & Livros"
                   : currentMode === "produtos"
@@ -164,6 +166,8 @@ export function Storefront({
             <h1 className="max-w-2xl bg-gradient-to-r from-[var(--red-bright)] via-[var(--red)] to-[var(--gold)] bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-6xl lg:text-7xl font-cinzel">
               {currentMode === "roupas" || currentMode === "vestuario"
                 ? "Mandalla Axé"
+                : currentMode === "acessorios"
+                ? "Mandalla Brilho"
                 : currentMode === "imagens"
                 ? "Mandalla Sagrada"
                 : currentMode === "produtos"
@@ -173,6 +177,8 @@ export function Storefront({
             <p className="mt-3.5 max-w-lg text-sm leading-relaxed text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
               {currentMode === "roupas" || currentMode === "vestuario"
                 ? "Vestuário feminino e masculino, conjuntos, batas, saias, guias, chapéus e bengalas consagradas."
+                : currentMode === "acessorios"
+                ? "Colares, brincos, chapéus, pulseiras, coroas, anéis, luvas, batom, rosas e apliques para cabelo."
                 : currentMode === "imagens"
                 ? "Imagens católicas e de umbanda, materiais de batismo e livros sagrados com acabamento impecável."
                 : currentMode === "produtos"
@@ -186,6 +192,8 @@ export function Storefront({
               >
                 {currentMode === "roupas" || currentMode === "vestuario"
                   ? "Ver Vestuário"
+                  : currentMode === "acessorios"
+                  ? "Ver Acessórios"
                   : currentMode === "imagens"
                   ? "Ver Imagens"
                   : currentMode === "produtos"
@@ -364,6 +372,8 @@ export function Storefront({
                 <span className="font-semibold text-foreground">
                   {currentMode === "roupas" || currentMode === "vestuario"
                     ? "Vestuário Sagrado de Axé"
+                    : currentMode === "acessorios"
+                    ? "Acessórios"
                     : currentMode === "imagens"
                     ? "Imagens Religiosas"
                     : currentMode === "produtos"
@@ -377,6 +387,8 @@ export function Storefront({
                   : activeCategory === "Todos"
                   ? currentMode === "roupas" || currentMode === "vestuario"
                     ? "Coleção de Vestuário"
+                    : currentMode === "acessorios"
+                    ? "Coleção de Acessórios"
                     : currentMode === "imagens"
                     ? "Galeria de Imagens"
                     : currentMode === "produtos"

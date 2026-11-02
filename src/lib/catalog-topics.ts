@@ -1,9 +1,9 @@
 import type { CategoryWithChildren } from "@/types/category";
 import type { Product } from "@/types/product";
 
-export type CatalogTopicId = "imagens" | "vestuario" | "produtos";
+export type CatalogTopicId = "imagens" | "vestuario" | "acessorios" | "produtos";
 
-export type StoreMode = "all" | "imagens" | "vestuario" | "produtos" | "roupas" | "artigos";
+export type StoreMode = "all" | "imagens" | "vestuario" | "acessorios" | "produtos" | "roupas" | "artigos";
 
 export interface CatalogTopicConfig {
   id: CatalogTopicId;
@@ -23,7 +23,13 @@ export const CATALOG_TOPICS: Record<CatalogTopicId, CatalogTopicConfig> = {
     id: "vestuario",
     title: "Vestuário Sagrado de Axé",
     subtitle: "Roupas, guias, chapéus e acessórios",
-    categories: ["Vestuários", "Chapéu", "Bengala", "Guias", "Bijuterias e Semi-Jóia"],
+    categories: ["Vestuários", "Bengala", "Guias"],
+  },
+  acessorios: {
+    id: "acessorios",
+    title: "Acessórios",
+    subtitle: "Colares, brincos, chapéus, coroas e mais",
+    categories: ["Chapéu", "Bijuterias e Semi-Jóia", "Acessórios"],
   },
   produtos: {
     id: "produtos",
@@ -119,6 +125,16 @@ export function getProductTopic(
     return "produtos";
   }
 
+  const accessoryWords = [
+    "colar", "colares", "brinco", "brincos", "chapeu", "chapeus", "pulseira", "pulseiras",
+    "rosa", "rosas", "luva", "luvas", "batom", "anel", "aneis", "coroa", "coroas",
+    "aplique", "apliques", "acessorio", "acessorios", "bijuteria", "bijuterias",
+  ];
+  const words = `${normCat} ${normProd}`.split(/[^a-z0-9]+/);
+  if (words.some((w) => accessoryWords.includes(w))) {
+    return "acessorios";
+  }
+
   if (
     normCat.includes("vestuario") ||
     normCat.includes("roupa") ||
@@ -152,6 +168,7 @@ export function computeTopicCounts(
   const counts: Record<CatalogTopicId, number> = {
     imagens: 0,
     vestuario: 0,
+    acessorios: 0,
     produtos: 0,
   };
 

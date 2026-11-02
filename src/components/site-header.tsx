@@ -15,6 +15,7 @@ import {
   X,
   Flame,
   Shirt,
+  Crown,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/store/cart-store";
@@ -413,6 +414,8 @@ export function SiteHeader({
             >
               {currentMode === "roupas" || currentMode === "vestuario" ? (
                 <Shirt className="h-4 w-4 text-[var(--gold)]" />
+              ) : currentMode === "acessorios" ? (
+                <Crown className="h-4 w-4 text-[var(--gold)]" />
               ) : currentMode === "imagens" ? (
                 <Sparkles className="h-4 w-4 text-[var(--gold)]" />
               ) : currentMode === "produtos" ? (
@@ -423,6 +426,8 @@ export function SiteHeader({
               <span className="hidden sm:inline">
                 {currentMode === "roupas" || currentMode === "vestuario"
                   ? "Vestuário"
+                  : currentMode === "acessorios"
+                  ? "Acessórios"
                   : currentMode === "imagens"
                   ? "Imagens"
                   : currentMode === "produtos"
