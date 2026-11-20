@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CreditCard, Clock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/services/billing";
+import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/lib/billing-config";
 
 interface PaymentWarningBannerProps {
   billing: BillingStatus;

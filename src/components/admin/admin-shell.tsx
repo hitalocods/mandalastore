@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { signOutAdmin } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
-import type { BillingStatus } from "@/services/billing";
+import type { BillingStatus } from "@/lib/billing-config";
 
 interface AdminShellProps {
   children: React.ReactNode;

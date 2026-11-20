@@ -19,7 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/services/billing";
+import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/lib/billing-config";
 
 interface AtlasLicenseClientProps {
   billing: BillingStatus;

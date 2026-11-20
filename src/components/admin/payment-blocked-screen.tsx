@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOutAdmin } from "@/app/actions/auth";
-import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/services/billing";
+import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/lib/billing-config";
 
 interface PaymentBlockedScreenProps {
   billing: BillingStatus;
