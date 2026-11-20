@@ -1,6 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { sql } from "@/lib/db";
 import { categories as defaultCategories } from "@/types/product";
+import { inferTopicByText, isValidTopicId, type CatalogTopicId } from "@/lib/catalog-topics";
 import type { Category, CategoryWithChildren } from "@/types/category";
 
 let isCategoriesTableEnsured = false;
@@ -17,6 +18,8 @@ export async function ensureCategoriesTable() {
         slug TEXT UNIQUE,
         sort_order INTEGER NOT NULL DEFAULT 0,
         image_url TEXT,
+        show_in_gallery BOOLEAN NOT NULL DEFAULT FALSE,
+        topic TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `;
@@ -34,6 +37,17 @@ export async function ensureCategoriesTable() {
     if (galleryCol.length === 0) {
       await sql`
         ALTER TABLE categories ADD COLUMN IF NOT EXISTS show_in_gallery BOOLEAN NOT NULL DEFAULT FALSE;
+      `;
+    }
+
+    // Coluna do Tópico da Tela Inicial ("imagens" | "vestuario" | "acessorios" | "produtos")
+    const topicCol = await sql`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'categories' AND column_name = 'topic'
+    `;
+    if (topicCol.length === 0) {
+      await sql`
+        ALTER TABLE categories ADD COLUMN IF NOT EXISTS topic TEXT;
       `;
     }
 
@@ -58,13 +72,24 @@ export async function ensureCategoriesTable() {
           .replace(/\p{Diacritic}/gu, "")
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-");
+        const topic = inferTopicByText(catName);
 
         await sql`
-          INSERT INTO categories (id, name, parent_id, slug, sort_order)
-          VALUES (${id}, ${catName}, NULL, ${slug}, ${index})
+          INSERT INTO categories (id, name, parent_id, slug, sort_order, topic)
+          VALUES (${id}, ${catName}, NULL, ${slug}, ${index}, ${topic})
           ON CONFLICT (slug) DO NOTHING
         `;
         index++;
+      }
+    } else {
+      // Preenche automaticamente o tópico das categorias principais antigas que ainda estão com topic NULL
+      const nullTopics = (await sql`
+        SELECT id, name FROM categories WHERE parent_id IS NULL AND topic IS NULL
+      `) as { id: string; name: string }[];
+
+      for (const row of nullTopics) {
+        const inferred = inferTopicByText(row.name);
+        await sql`UPDATE categories SET topic = ${inferred} WHERE id = ${row.id}`;
       }
     }
     isCategoriesTableEnsured = true;
@@ -80,7 +105,7 @@ export async function getCategories(): Promise<CategoryWithChildren[]> {
     await ensureCategoriesTable();
 
     const rows = (await sql`
-      SELECT id, name, parent_id, slug, sort_order, image_url, show_in_gallery, created_at
+      SELECT id, name, parent_id, slug, sort_order, image_url, show_in_gallery, topic, created_at
       FROM categories
       ORDER BY sort_order ASC, name ASC
     `) as Category[];
@@ -90,7 +115,12 @@ export async function getCategories(): Promise<CategoryWithChildren[]> {
     const rootCategories: CategoryWithChildren[] = [];
 
     rows.forEach((cat) => {
-      categoryMap.set(cat.id, { ...cat, children: [] });
+      const normalizedTopic: CatalogTopicId | null = isValidTopicId(cat.topic)
+        ? cat.topic
+        : cat.parent_id
+        ? null
+        : inferTopicByText(cat.name);
+      categoryMap.set(cat.id, { ...cat, topic: normalizedTopic, children: [] });
     });
 
     rows.forEach((cat) => {
@@ -98,7 +128,11 @@ export async function getCategories(): Promise<CategoryWithChildren[]> {
       if (!node) return;
 
       if (cat.parent_id && categoryMap.has(cat.parent_id)) {
-        categoryMap.get(cat.parent_id)!.children.push(node);
+        const parent = categoryMap.get(cat.parent_id)!;
+        if (!node.topic) {
+          node.topic = parent.topic ?? inferTopicByText(parent.name);
+        }
+        parent.children.push(node);
       } else {
         rootCategories.push(node);
       }
@@ -118,7 +152,7 @@ export async function getAllFlatCategories(): Promise<Category[]> {
     await ensureCategoriesTable();
 
     const rows = (await sql`
-      SELECT id, name, parent_id, slug, sort_order, image_url, show_in_gallery, created_at
+      SELECT id, name, parent_id, slug, sort_order, image_url, show_in_gallery, topic, created_at
       FROM categories
       ORDER BY name ASC
     `) as Category[];

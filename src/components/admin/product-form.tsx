@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { parseSizeVariants, serializeSizeVariants } from "@/lib/size-variants";
 import { compressImage } from "@/lib/image-compression";
+import { CATALOG_TOPICS, inferTopicByText } from "@/lib/catalog-topics";
 import { categories as defaultCategories, type Product, type SizeVariant } from "@/types/product";
 
 function isValidImage(file: File) {
@@ -324,7 +325,12 @@ export function ProductForm({
         </div>
       </div>
       <div className="grid gap-1.5">
-        <Label className="text-xs font-semibold text-slate-700">Categoria ou Subcategoria</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs font-semibold text-slate-700">Categoria ou Subcategoria</Label>
+          <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+            Card na entrada: {CATALOG_TOPICS[inferTopicByText(category)].title}
+          </span>
+        </div>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}

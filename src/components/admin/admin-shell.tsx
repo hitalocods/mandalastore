@@ -63,7 +63,7 @@ export function AdminShell({ children, billingStatus }: AdminShellProps) {
       exact: true,
     },
     {
-      title: "Categorias",
+      title: "Categorias & Entrada",
       href: "/admin/categorias",
       icon: Layers,
       exact: true,

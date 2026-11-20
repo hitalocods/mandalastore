@@ -5,6 +5,7 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { ensureCategoriesTable } from "@/services/categories";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { CATALOG_TOPICS, inferTopicByText, isValidTopicId, type CatalogTopicId } from "@/lib/catalog-topics";
 
 export type CategoryActionResult = {
   success: boolean;
@@ -48,9 +49,15 @@ export async function createCategory(formData: FormData): Promise<CategoryAction
   const name = String(formData.get("name") || "").trim();
   const parentIdRaw = String(formData.get("parent_id") || "").trim();
   const parentId = parentIdRaw && parentIdRaw !== "none" ? parentIdRaw : null;
+  const topicRaw = String(formData.get("topic") || "").trim();
 
   if (!name) {
     return { success: false, message: "Nome da categoria é obrigatório." };
+  }
+
+  let topic: CatalogTopicId | null = isValidTopicId(topicRaw) ? topicRaw : null;
+  if (!topic && !parentId) {
+    topic = inferTopicByText(name);
   }
 
   const upload = await uploadCategoryImage(formData.get("image") as File | null);
@@ -72,8 +79,8 @@ export async function createCategory(formData: FormData): Promise<CategoryAction
     const sortOrder = Number(maxRes[0]?.max ?? -1) + 1;
 
     await sql`
-      INSERT INTO categories (id, name, parent_id, slug, sort_order, image_url, show_in_gallery)
-      VALUES (${id}, ${name}, ${parentId}, ${slug}, ${sortOrder}, ${imageUrl}, FALSE)
+      INSERT INTO categories (id, name, parent_id, slug, sort_order, image_url, show_in_gallery, topic)
+      VALUES (${id}, ${name}, ${parentId}, ${slug}, ${sortOrder}, ${imageUrl}, FALSE, ${topic})
     `;
 
     revalidateAll();
@@ -93,6 +100,9 @@ export async function updateCategory(formData: FormData): Promise<CategoryAction
   const name = String(formData.get("name") || "").trim();
   const parentIdRaw = String(formData.get("parent_id") || "").trim();
   const parentId = parentIdRaw && parentIdRaw !== "none" && parentIdRaw !== id ? parentIdRaw : null;
+  const hasTopic = formData.has("topic");
+  const topicRaw = String(formData.get("topic") || "").trim();
+  const topicValue: CatalogTopicId | null = isValidTopicId(topicRaw) ? topicRaw : null;
 
   if (!id || !name) {
     return { success: false, message: "ID e Nome são obrigatórios." };
@@ -111,10 +121,22 @@ export async function updateCategory(formData: FormData): Promise<CategoryAction
 
   try {
     // OBS: sort_order NÃO é alterado aqui (antes era zerado a cada edição, bagunçando a ordem)
-    if (newImageUrl !== undefined) {
+    if (newImageUrl !== undefined && hasTopic) {
+      await sql`
+        UPDATE categories
+        SET name = ${name}, parent_id = ${parentId}, image_url = ${newImageUrl}, topic = ${topicValue}
+        WHERE id = ${id}
+      `;
+    } else if (newImageUrl !== undefined) {
       await sql`
         UPDATE categories
         SET name = ${name}, parent_id = ${parentId}, image_url = ${newImageUrl}
+        WHERE id = ${id}
+      `;
+    } else if (hasTopic) {
+      await sql`
+        UPDATE categories
+        SET name = ${name}, parent_id = ${parentId}, topic = ${topicValue}
         WHERE id = ${id}
       `;
     } else {
@@ -214,5 +236,35 @@ export async function moveCategory(id: string, direction: "up" | "down"): Promis
   } catch (error) {
     console.error("Erro ao reordenar categoria:", error);
     return { success: false, message: "Erro ao reordenar." };
+  }
+}
+
+/**
+ * Define em qual dos 4 cards da tela inicial (tópicos) a categoria vai aparecer.
+ */
+export async function updateCategoryTopic(
+  id: string,
+  topic: CatalogTopicId | null
+): Promise<CategoryActionResult> {
+  const authErr = await checkAdmin();
+  if (authErr) return authErr;
+  await ensureCategoriesTable();
+
+  if (!id) return { success: false, message: "Categoria inválida." };
+  if (topic !== null && !isValidTopicId(topic)) {
+    return { success: false, message: "Tópico inválido." };
+  }
+
+  try {
+    await sql`UPDATE categories SET topic = ${topic} WHERE id = ${id}`;
+    revalidateAll();
+    const label = topic ? CATALOG_TOPICS[topic].title : "Padrão da categoria pai";
+    return {
+      success: true,
+      message: `Movida para "${label}" na tela inicial!`,
+    };
+  } catch (error) {
+    console.error("Erro ao alterar tópico da categoria:", error);
+    return { success: false, message: "Erro ao alterar tópico da categoria." };
   }
 }
