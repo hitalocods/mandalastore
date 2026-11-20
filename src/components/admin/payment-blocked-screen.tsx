@@ -16,57 +16,21 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOutAdmin } from "@/app/actions/auth";
-import { PixPaymentModal } from "@/components/admin/pix-payment-modal";
-import type { BillingStatus } from "@/services/billing";
+import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/services/billing";
 
 interface PaymentBlockedScreenProps {
   billing: BillingStatus;
 }
 
 export function PaymentBlockedScreen({ billing }: PaymentBlockedScreenProps) {
-  const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [checkResult, setCheckResult] = useState<string | null>(null);
   const [showBypassModal, setShowBypassModal] = useState(false);
   const [bypassKey, setBypassKey] = useState("");
   const [bypassLoading, setBypassLoading] = useState(false);
   const [bypassError, setBypassError] = useState<string | null>(null);
-  const [modalData, setModalData] = useState<{
-    isOpen: boolean;
-    qrCode?: string | null;
-    pixCopyPaste?: string | null;
-    checkoutUrl?: string | null;
-  }>({ isOpen: false });
 
-  // Iniciar checkout AbacatePay via PIX
-  const handleOpenCheckout = async () => {
-    try {
-      setIsLoadingCheckout(true);
-      const res = await fetch("/api/admin/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ monthRef: billing.dueMonthRef }),
-      });
-
-      const data = await res.json();
-      if (data.qrCode || data.pixCopyPaste) {
-        setModalData({
-          isOpen: true,
-          qrCode: data.qrCode,
-          pixCopyPaste: data.pixCopyPaste,
-          checkoutUrl: data.initPoint,
-        });
-      } else if (data.initPoint) {
-        window.location.href = data.initPoint;
-      } else {
-        alert(data.error || "Não foi possível abrir o checkout do AbacatePay.");
-      }
-    } catch {
-      alert("Erro ao conectar com o serviço de pagamento.");
-    } finally {
-      setIsLoadingCheckout(false);
-    }
-  };
+  const checkoutUrl = billing.checkoutUrl || ABACATEPAY_CARD_CHECKOUT_URL;
 
   // Verificar se o pagamento já foi aprovado
   const handleCheckPayment = async () => {
@@ -204,13 +168,14 @@ export function PaymentBlockedScreen({ billing }: PaymentBlockedScreenProps) {
           {/* Ações de Pagamento */}
           <div className="space-y-3">
             <Button
-              onClick={handleOpenCheckout}
-              disabled={isLoadingCheckout}
+              asChild
               className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-sm sm:text-base shadow-lg shadow-emerald-950/50 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <CreditCard className="h-5 w-5" />
-              {isLoadingCheckout ? "Abrindo AbacatePay..." : "Pagar Agora via PIX"}
-              <ExternalLink className="h-4 w-4 ml-auto opacity-70" />
+              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
+                <CreditCard className="h-5 w-5" />
+                Pagar Agora no Cartão (AbacatePay)
+                <ExternalLink className="h-4 w-4 ml-auto opacity-70" />
+              </a>
             </Button>
 
             <Button
@@ -280,17 +245,6 @@ export function PaymentBlockedScreen({ billing }: PaymentBlockedScreenProps) {
               {bypassError && <p className="text-[11px] text-rose-400">{bypassError}</p>}
             </form>
           )}
-
-          <PixPaymentModal
-            isOpen={modalData.isOpen}
-            onClose={() => setModalData((prev) => ({ ...prev, isOpen: false }))}
-            monthRef={billing.dueMonthRef}
-            amount={billing.amount}
-            qrCodeBase64={modalData.qrCode}
-            pixCopyPaste={modalData.pixCopyPaste}
-            checkoutUrl={modalData.checkoutUrl}
-            onPaymentSuccess={() => window.location.reload()}
-          />
         </div>
       </main>
 

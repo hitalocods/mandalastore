@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { QrCode, Clock, ExternalLink } from "lucide-react";
+import { CreditCard, Clock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PixPaymentModal } from "@/components/admin/pix-payment-modal";
-import type { BillingStatus } from "@/services/billing";
+import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/services/billing";
 
 interface PaymentWarningBannerProps {
   billing: BillingStatus;
@@ -12,42 +11,8 @@ interface PaymentWarningBannerProps {
 
 export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
   const [isMinimized, setIsMinimized] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [modalData, setModalData] = useState<{
-    isOpen: boolean;
-    qrCode?: string | null;
-    pixCopyPaste?: string | null;
-    checkoutUrl?: string | null;
-  }>({ isOpen: false });
 
-  const handlePay = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch("/api/admin/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ monthRef: billing.dueMonthRef }),
-      });
-      const data = await res.json();
-      if (data.qrCode || data.pixCopyPaste) {
-        setModalData({
-          isOpen: true,
-          qrCode: data.qrCode,
-          pixCopyPaste: data.pixCopyPaste,
-          checkoutUrl: data.initPoint,
-        });
-      } else if (data.initPoint) {
-        window.location.href = data.initPoint;
-      } else {
-        alert(data.error || "Não foi possível abrir o checkout do AbacatePay.");
-      }
-    } catch {
-      alert("Erro ao conectar com o serviço de pagamento.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  const checkoutUrl = billing.checkoutUrl || ABACATEPAY_CARD_CHECKOUT_URL;
   const isOverdue = Boolean(billing.isOverdue || billing.daysOverdue > 0);
 
   if (isMinimized) {
@@ -69,12 +34,13 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            asChild
             size="sm"
-            onClick={handlePay}
-            disabled={isLoading}
             className="h-7 rounded-lg bg-amber-600 px-3 text-[11px] font-bold text-white hover:bg-amber-700 cursor-pointer"
           >
-            <QrCode className="mr-1 h-3 w-3" /> Pagar Agora
+            <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
+              <CreditCard className="mr-1 h-3 w-3" /> Pagar no Cartão
+            </a>
           </Button>
           <button
             onClick={() => setIsMinimized(false)}
@@ -105,11 +71,11 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
           <p className="text-xs text-slate-600">
             {isOverdue ? (
               <>
-                A fatura mensal está pendente, mas seu painel administrativo e a loja continuam <strong>100% liberados e funcionando</strong> sem interrupções. Efetue o pagamento via PIX quando puder.
+                A fatura mensal está pendente, mas seu painel administrativo e a loja continuam <strong>100% liberados e funcionando</strong> sem interrupções. Efetue o pagamento no cartão quando puder.
               </>
             ) : (
               <>
-                A fatura deste mês vence dia <strong>20</strong>. Pague antecipadamente com PIX via AbacatePay para manter sua conta em dia.
+                A fatura deste mês vence dia <strong>20</strong>. Pague com cartão via AbacatePay para manter sua conta em dia.
               </>
             )}
           </p>
@@ -117,12 +83,14 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
 
         <div className="flex items-center gap-2.5 shrink-0">
           <Button
-            onClick={handlePay}
-            disabled={isLoading}
+            asChild
             className="h-9 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs px-4 cursor-pointer gap-1.5"
           >
-            <QrCode className="h-3.5 w-3.5" />
-            {isLoading ? "Gerando QR Code..." : "Pagar Fatura via PIX"}
+            <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
+              <CreditCard className="h-3.5 w-3.5" />
+              Pagar Fatura no Cartão
+              <ExternalLink className="h-3 w-3 opacity-80" />
+            </a>
           </Button>
 
           <button
@@ -133,17 +101,6 @@ export function PaymentWarningBanner({ billing }: PaymentWarningBannerProps) {
           </button>
         </div>
       </div>
-
-      <PixPaymentModal
-        isOpen={modalData.isOpen}
-        onClose={() => setModalData((prev) => ({ ...prev, isOpen: false }))}
-        monthRef={billing.dueMonthRef}
-        amount={billing.amount}
-        qrCodeBase64={modalData.qrCode}
-        pixCopyPaste={modalData.pixCopyPaste}
-        checkoutUrl={modalData.checkoutUrl}
-        onPaymentSuccess={() => window.location.reload()}
-      />
     </div>
   );
 }

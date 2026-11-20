@@ -20,33 +20,25 @@ export function NeighborhoodForm({ neighborhood }: { neighborhood?: Neighborhood
         formData.set("is_active", String(isActive));
         startTransition(async () => {
           try {
-            if (neighborhood) {
-              await updateNeighborhood(formData);
-              toast.success("Bairro atualizado");
-            } else {
-              await createNeighborhood(formData);
-              toast.success("Bairro criado");
-            }
-          } catch (error: unknown) {
-            const err = error as { message?: string; digest?: string };
-            const msg = err?.message || "";
-            const digest = err?.digest || "";
+            const res = neighborhood
+              ? await updateNeighborhood(formData)
+              : await createNeighborhood(formData);
 
-            const isSessionExpired =
-              msg === "UNAUTHORIZED_SESSION_EXPIRED" ||
-              msg === "NEXT_REDIRECT" ||
-              digest.startsWith("NEXT_REDIRECT") ||
-              msg.toLowerCase().includes("sessão expirou");
-
-            if (isSessionExpired) {
-              toast.error("Sua sessão expirou. Redirecionando para a página de login...");
-              setTimeout(() => {
-                window.location.href = "/admin/login";
-              }, 1200);
+            if (!res.success) {
+              if (res.isSessionExpired) {
+                toast.error("Sua sessão expirou. Redirecionando para a página de login...");
+                setTimeout(() => {
+                  window.location.href = "/admin/login";
+                }, 1200);
+                return;
+              }
+              toast.error(res.error || "Falha ao salvar bairro");
               return;
             }
 
-            toast.error(msg || "Falha ao salvar bairro");
+            toast.success(neighborhood ? "Bairro atualizado" : "Bairro criado");
+          } catch {
+            toast.error("Falha de conexão ao salvar bairro. Tente novamente.");
           }
         });
       }}

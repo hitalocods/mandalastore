@@ -81,16 +81,6 @@ export async function ensureCategoriesTable() {
         `;
         index++;
       }
-    } else {
-      // Preenche automaticamente o tópico das categorias principais antigas que ainda estão com topic NULL
-      const nullTopics = (await sql`
-        SELECT id, name FROM categories WHERE parent_id IS NULL AND topic IS NULL
-      `) as { id: string; name: string }[];
-
-      for (const row of nullTopics) {
-        const inferred = inferTopicByText(row.name);
-        await sql`UPDATE categories SET topic = ${inferred} WHERE id = ${row.id}`;
-      }
     }
     isCategoriesTableEnsured = true;
   } catch (error) {

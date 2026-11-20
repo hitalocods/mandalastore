@@ -31,6 +31,10 @@ export interface BillingStatus {
 const DEFAULT_AMOUNT = 60.0;
 const DUE_DAY = 20;
 
+export const ABACATEPAY_CARD_CHECKOUT_URL =
+  "https://app.abacatepay.com/pay/bill_3SrRcSesbk4Kd0zSh21cGKqL";
+export const ABACATEPAY_BILL_ID = "bill_3SrRcSesbk4Kd0zSh21cGKqL";
+
 /**
  * Retorna as partes da data no horário oficial de Brasília (America/Sao_Paulo)
  */
@@ -236,138 +240,43 @@ export async function getBillingStatus(): Promise<BillingStatus> {
     dueDay,
     daysUntilDue,
     daysOverdue,
-    preferenceId: activeBilling.preference_id,
+    preferenceId: activeBilling.preference_id || ABACATEPAY_BILL_ID,
+    checkoutUrl: ABACATEPAY_CARD_CHECKOUT_URL,
   };
 }
 
 /**
- * Cria ou recupera o checkout e QR Code de pagamento no AbacatePay (exclusivo via PIX)
+ * Retorna o link direto de pagamento via Cartão no AbacatePay
  */
 export async function getOrCreateAbacatePayCheckout(
   monthRef: string,
-  baseUrl: string
+  _baseUrl?: string
 ): Promise<{
   initPoint: string;
   preferenceId: string;
   qrCode?: string | null;
   pixCopyPaste?: string | null;
 }> {
-  const token = process.env.ABACATEPAY_API_KEY;
-  if (!token) {
-    throw new Error("ABACATEPAY_API_KEY não configurado no .env");
-  }
-
+  void _baseUrl;
   const [yearStr, monthStr] = monthRef.split("-");
-  const monthNum = Number(monthStr);
-  const yearNum = Number(yearStr);
-  const billing = await getOrCreateMonthBilling(monthRef, yearNum, monthNum);
-  const safeBaseUrl = baseUrl.replace(/\/$/, "");
-
-  const amountCents = Math.round((Number(billing.amount) || 60) * 100);
-
-  // 1. Tenta gerar via PIX Transparente direto (retorna QR Code imagem + Copia e Cola)
-  try {
-    const transparentRes = await fetch("https://api.abacatepay.com/v2/transparents/create", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        method: "PIX",
-        data: {
-          amount: amountCents,
-          description: `Mensalidade Mandala Prime (${monthStr}/${yearStr})`,
-          expiresIn: 86400, // 24 horas
-        },
-      }),
-    });
-
-    if (transparentRes.ok) {
-      const transparentData = await transparentRes.json();
-      const pix = transparentData.data;
-
-      if (pix?.id && (pix?.brCode || pix?.brCodeBase64)) {
-        try {
-          await sql`
-            UPDATE system_billing
-            SET preference_id = ${pix.id}, updated_at = CURRENT_TIMESTAMP
-            WHERE month_reference = ${monthRef}
-          `;
-        } catch (e) {
-          console.error("Erro ao atualizar preference_id do PIX no banco:", e);
-        }
-
-        return {
-          initPoint: pix.receiptUrl || `${safeBaseUrl}/admin/licenca`,
-          preferenceId: pix.id,
-          qrCode: pix.brCodeBase64 || null,
-          pixCopyPaste: pix.brCode || null,
-        };
-      }
-    }
-  } catch (err) {
-    console.warn("Falha ao gerar PIX transparente, usando checkout:", err);
-  }
-
-  // 2. Fallback: gera via Checkout Pro (Página do AbacatePay exclusiva PIX)
-  const productId = process.env.ABACATEPAY_PRODUCT_ID || "prod_PuAHphuLmGRC40GuG0D4Lbpj";
-
-  const payload = {
-    externalId: `billing-${monthRef}`,
-    items: [
-      {
-        id: productId,
-        quantity: 1,
-      },
-    ],
-    methods: ["PIX"],
-    frequency: "ONE_TIME",
-    returnUrl: `${safeBaseUrl}/admin/licenca?ref=${monthRef}`,
-    completionUrl: `${safeBaseUrl}/admin/licenca?payment_status=success&ref=${monthRef}`,
-  };
-
-  const response = await fetch("https://api.abacatepay.com/v2/checkouts/create", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Erro AbacatePay checkouts/create:", errorText);
-    let detail = response.statusText;
-    try {
-      const parsed = JSON.parse(errorText);
-      detail = parsed.error || parsed.message || detail;
-    } catch {
-      // ignora
-    }
-    throw new Error(`Falha ao gerar cobrança no AbacatePay: ${detail}`);
-  }
-
-  const data = await response.json();
-  const initPoint = data.data?.url;
-  const preferenceId = data.data?.id;
-
-  if (!initPoint || !preferenceId) {
-    throw new Error("Resposta inválida da AbacatePay ao gerar checkout");
-  }
+  await getOrCreateMonthBilling(monthRef, Number(yearStr), Number(monthStr));
 
   try {
     await sql`
       UPDATE system_billing
-      SET preference_id = ${preferenceId}, updated_at = CURRENT_TIMESTAMP
+      SET preference_id = ${ABACATEPAY_BILL_ID}, updated_at = CURRENT_TIMESTAMP
       WHERE month_reference = ${monthRef}
     `;
   } catch (e) {
     console.error("Erro ao atualizar preference_id no banco:", e);
   }
 
-  return { initPoint, preferenceId, qrCode: null, pixCopyPaste: null };
+  return {
+    initPoint: ABACATEPAY_CARD_CHECKOUT_URL,
+    preferenceId: ABACATEPAY_BILL_ID,
+    qrCode: null,
+    pixCopyPaste: null,
+  };
 }
 
 // Alias para compatibilidade
@@ -445,7 +354,9 @@ export async function checkAbacatePayPaymentStatus(monthRef: string): Promise<bo
     }
 
     const matchedCheckout = checkouts.find((c: AbacateCheckout) => {
-      const matchId = billing.preference_id && c.id === billing.preference_id;
+      const matchId =
+        (billing.preference_id && c.id === billing.preference_id) ||
+        c.id === ABACATEPAY_BILL_ID;
       const matchExt = c.externalId === `billing-${monthRef}`;
       return matchId || matchExt;
     });
@@ -455,7 +366,7 @@ export async function checkAbacatePayPaymentStatus(monthRef: string): Promise<bo
       (matchedCheckout.status === "PAID" ||
         (matchedCheckout.paidAmount && matchedCheckout.paidAmount > 0))
     ) {
-      await markBillingAsPaid(monthRef, matchedCheckout.id, "PIX/AbacatePay");
+      await markBillingAsPaid(monthRef, matchedCheckout.id, "Cartão/AbacatePay");
       return true;
     }
   } catch (error) {

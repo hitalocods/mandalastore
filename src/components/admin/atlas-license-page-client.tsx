@@ -19,51 +19,17 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PixPaymentModal } from "@/components/admin/pix-payment-modal";
-import type { BillingStatus } from "@/services/billing";
+import { ABACATEPAY_CARD_CHECKOUT_URL, type BillingStatus } from "@/services/billing";
 
 interface AtlasLicenseClientProps {
   billing: BillingStatus;
 }
 
 export function AtlasLicenseClient({ billing }: AtlasLicenseClientProps) {
-  const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [checkResult, setCheckResult] = useState<string | null>(null);
-  const [modalData, setModalData] = useState<{
-    isOpen: boolean;
-    qrCode?: string | null;
-    pixCopyPaste?: string | null;
-    checkoutUrl?: string | null;
-  }>({ isOpen: false });
 
-  const handlePay = async () => {
-    try {
-      setIsLoadingCheckout(true);
-      const res = await fetch("/api/admin/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ monthRef: billing.dueMonthRef }),
-      });
-      const data = await res.json();
-      if (data.qrCode || data.pixCopyPaste) {
-        setModalData({
-          isOpen: true,
-          qrCode: data.qrCode,
-          pixCopyPaste: data.pixCopyPaste,
-          checkoutUrl: data.initPoint,
-        });
-      } else if (data.initPoint) {
-        window.location.href = data.initPoint;
-      } else {
-        alert(data.error || "Não foi possível abrir o checkout do AbacatePay.");
-      }
-    } catch {
-      alert("Erro ao conectar com o serviço de pagamento.");
-    } finally {
-      setIsLoadingCheckout(false);
-    }
-  };
+  const checkoutUrl = billing.checkoutUrl || ABACATEPAY_CARD_CHECKOUT_URL;
 
   const handleCheckPayment = async () => {
     try {
@@ -182,9 +148,9 @@ export function AtlasLicenseClient({ billing }: AtlasLicenseClientProps) {
             Forma de Pagamento
           </span>
           <p className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-            <CreditCard className="h-4 w-4 text-emerald-600" /> AbacatePay
+            <CreditCard className="h-4 w-4 text-emerald-600" /> Cartão de Crédito
           </p>
-          <p className="text-[11px] text-slate-500">PIX Instantâneo</p>
+          <p className="text-[11px] text-slate-500">Checkout AbacatePay</p>
         </div>
       </div>
 
@@ -205,13 +171,14 @@ export function AtlasLicenseClient({ billing }: AtlasLicenseClientProps) {
 
           <div className="flex items-center gap-3">
             <Button
-              onClick={handlePay}
-              disabled={isLoadingCheckout}
+              asChild
               className="h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs sm:text-sm px-5 shadow-sm gap-2 cursor-pointer"
             >
-              <CreditCard className="h-4 w-4" />
-              {isLoadingCheckout ? "Abrindo AbacatePay..." : "Pagar Fatura via PIX"}
-              <ExternalLink className="h-3.5 w-3.5 opacity-80" />
+              <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
+                <CreditCard className="h-4 w-4" />
+                Pagar Fatura no Cartão
+                <ExternalLink className="h-3.5 w-3.5 opacity-80" />
+              </a>
             </Button>
 
             <Button
@@ -310,17 +277,6 @@ export function AtlasLicenseClient({ billing }: AtlasLicenseClientProps) {
           </a>
         </Button>
       </div>
-
-      <PixPaymentModal
-        isOpen={modalData.isOpen}
-        onClose={() => setModalData((prev) => ({ ...prev, isOpen: false }))}
-        monthRef={billing.dueMonthRef}
-        amount={billing.amount}
-        qrCodeBase64={modalData.qrCode}
-        pixCopyPaste={modalData.pixCopyPaste}
-        checkoutUrl={modalData.checkoutUrl}
-        onPaymentSuccess={() => window.location.reload()}
-      />
     </div>
   );
 }

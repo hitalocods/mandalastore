@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { AlertCircle, RefreshCw, Home, MessageCircle, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SITE_CONFIG } from "@/lib/site-config";
 
 export default function Error({
   error,
@@ -70,7 +71,7 @@ export default function Error({
               className="w-full text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 text-xs py-2 cursor-pointer"
             >
               <a
-                href="https://wa.me/5531991475960?text=Ol%C3%A1%2C+ocorreu+uma+instabilidade+ao+acessar+o+site+da+Mandalla+Prime"
+                href={`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=Ol%C3%A1%2C+ocorreu+uma+instabilidade+ao+acessar+o+site+da+Mandalla+Prime`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2"

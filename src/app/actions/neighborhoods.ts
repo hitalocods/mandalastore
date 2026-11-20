@@ -4,12 +4,22 @@ import { revalidatePath } from "next/cache";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { sql } from "@/lib/db";
 
-async function assertAdmin() {
-  const isAdmin = await isAdminAuthenticated();
+export type NeighborhoodActionResult = {
+  success: boolean;
+  error?: string;
+  isSessionExpired?: boolean;
+};
 
+async function checkAdmin(): Promise<NeighborhoodActionResult | null> {
+  const isAdmin = await isAdminAuthenticated();
   if (!isAdmin) {
-    throw new Error("UNAUTHORIZED_SESSION_EXPIRED");
+    return {
+      success: false,
+      error: "Sua sessão expirou. Entre novamente no painel.",
+      isSessionExpired: true,
+    };
   }
+  return null;
 }
 
 function getNumber(formData: FormData, key: string) {
@@ -35,70 +45,103 @@ async function ensureNeighborhoodsTable() {
 }
 
 function revalidateNeighborhoodRoutes() {
-  revalidatePath("/admin");
-  revalidatePath("/admin/bairros");
+  try {
+    revalidatePath("/");
+    revalidatePath("/admin");
+    revalidatePath("/admin/bairros");
+  } catch {
+    // Ignora falha de revalidação
+  }
 }
 
-export async function createNeighborhood(formData: FormData) {
-  await assertAdmin();
-  await ensureNeighborhoodsTable();
+export async function createNeighborhood(formData: FormData): Promise<NeighborhoodActionResult> {
+  const authErr = await checkAdmin();
+  if (authErr) return authErr;
 
-  await sql`
-    INSERT INTO neighborhoods (id, name, delivery_fee, is_active, sort_order)
-    VALUES (
-      ${crypto.randomUUID()},
-      ${String(formData.get("name") || "")},
-      ${getNumber(formData, "delivery_fee")},
-      ${String(formData.get("is_active") || "true") === "true"},
-      ${Math.max(0, Math.round(getNumber(formData, "sort_order")))}
-    )
-  `;
+  try {
+    await ensureNeighborhoodsTable();
 
-  revalidateNeighborhoodRoutes();
+    await sql`
+      INSERT INTO neighborhoods (id, name, delivery_fee, is_active, sort_order)
+      VALUES (
+        ${crypto.randomUUID()},
+        ${String(formData.get("name") || "").trim()},
+        ${getNumber(formData, "delivery_fee")},
+        ${String(formData.get("is_active") || "true") === "true"},
+        ${Math.max(0, Math.round(getNumber(formData, "sort_order")))}
+      )
+    `;
+
+    revalidateNeighborhoodRoutes();
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Erro ao criar bairro:", err);
+    return { success: false, error: "Não foi possível salvar o bairro. Verifique se o nome já existe." };
+  }
 }
 
-export async function updateNeighborhood(formData: FormData) {
-  await assertAdmin();
-  await ensureNeighborhoodsTable();
-  const id = String(formData.get("id") || "");
+export async function updateNeighborhood(formData: FormData): Promise<NeighborhoodActionResult> {
+  const authErr = await checkAdmin();
+  if (authErr) return authErr;
 
-  await sql`
-    UPDATE neighborhoods
-    SET
-      name = ${String(formData.get("name") || "")},
-      delivery_fee = ${getNumber(formData, "delivery_fee")},
-      is_active = ${String(formData.get("is_active") || "true") === "true"},
-      sort_order = ${Math.max(0, Math.round(getNumber(formData, "sort_order")))}
-    WHERE id = ${id}
-  `;
+  try {
+    await ensureNeighborhoodsTable();
+    const id = String(formData.get("id") || "");
 
-  revalidateNeighborhoodRoutes();
+    await sql`
+      UPDATE neighborhoods
+      SET
+        name = ${String(formData.get("name") || "").trim()},
+        delivery_fee = ${getNumber(formData, "delivery_fee")},
+        is_active = ${String(formData.get("is_active") || "true") === "true"},
+        sort_order = ${Math.max(0, Math.round(getNumber(formData, "sort_order")))}
+      WHERE id = ${id}
+    `;
+
+    revalidateNeighborhoodRoutes();
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Erro ao atualizar bairro:", err);
+    return { success: false, error: "Não foi possível atualizar o bairro." };
+  }
 }
 
 export async function deleteNeighborhood(formData: FormData) {
-  await assertAdmin();
-  await ensureNeighborhoodsTable();
-  const id = String(formData.get("id") || "");
+  const authErr = await checkAdmin();
+  if (authErr) return;
 
-  await sql`
-    DELETE FROM neighborhoods
-    WHERE id = ${id}
-  `;
+  try {
+    await ensureNeighborhoodsTable();
+    const id = String(formData.get("id") || "");
 
-  revalidateNeighborhoodRoutes();
+    await sql`
+      DELETE FROM neighborhoods
+      WHERE id = ${id}
+    `;
+
+    revalidateNeighborhoodRoutes();
+  } catch (err) {
+    console.error("Erro ao excluir bairro:", err);
+  }
 }
 
 export async function toggleNeighborhoodActive(formData: FormData) {
-  await assertAdmin();
-  await ensureNeighborhoodsTable();
-  const id = String(formData.get("id") || "");
-  const isActive = String(formData.get("is_active") || "false") === "true";
+  const authErr = await checkAdmin();
+  if (authErr) return;
 
-  await sql`
-    UPDATE neighborhoods
-    SET is_active = ${!isActive}
-    WHERE id = ${id}
-  `;
+  try {
+    await ensureNeighborhoodsTable();
+    const id = String(formData.get("id") || "");
+    const isActive = String(formData.get("is_active") || "false") === "true";
 
-  revalidateNeighborhoodRoutes();
+    await sql`
+      UPDATE neighborhoods
+      SET is_active = ${!isActive}
+      WHERE id = ${id}
+    `;
+
+    revalidateNeighborhoodRoutes();
+  } catch (err) {
+    console.error("Erro ao alternar status do bairro:", err);
+  }
 }

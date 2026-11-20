@@ -10,9 +10,9 @@ export const metadata = {
 
 export default async function AdminPedidosPage() {
   const [orders, neighborhoods] = await Promise.all([
-    getOrders(),
-    getNeighborhoods(),
+    getOrders().catch(() => []),
+    getNeighborhoods().catch(() => []),
   ]);
 
-  return <OrdersManager initialOrders={orders} neighborhoods={neighborhoods} />;
+  return <OrdersManager initialOrders={orders || []} neighborhoods={neighborhoods || []} />;
 }
