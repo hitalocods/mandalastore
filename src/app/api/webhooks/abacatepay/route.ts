@@ -22,12 +22,17 @@ export async function POST(request: Request) {
 
     console.log(`[AbacatePay Webhook] Evento recebido: ${event || "desconhecido"}`, data?.id);
 
-    // Eventos de sucesso de pagamento na v2 ou v1
+    // Eventos de sucesso de pagamento ou assinatura no cartão (v2 ou v1)
     const isPaymentCompleted =
       event === "checkout.completed" ||
       event === "transparent.completed" ||
       event === "billing.paid" ||
-      data?.status === "PAID";
+      event === "subscription.created" ||
+      event === "subscription.paid" ||
+      event === "subscription.renewed" ||
+      data?.status === "PAID" ||
+      data?.status === "ACTIVE" ||
+      data?.status === "COMPLETED";
 
     if (isPaymentCompleted && data) {
       const billId = String(data.id || "");
@@ -39,14 +44,15 @@ export async function POST(request: Request) {
         monthRef = externalId.replace("billing-", "");
       }
 
-      // Se não veio no externalId, tenta identificar pelo mês devido atual
+      // Se não veio no externalId (como no link direto bill_3SrRcSesbk4Kd0zSh21cGKqL),
+      // marca como paga a fatura do mês devido atual
       if (!monthRef) {
         const billingStatus = await getBillingStatus();
         monthRef = billingStatus.dueMonthRef;
       }
 
       if (monthRef) {
-        await markBillingAsPaid(monthRef, billId, "PIX/AbacatePay");
+        await markBillingAsPaid(monthRef, billId, "Cartão/AbacatePay");
         console.log(`[AbacatePay Webhook] Mensalidade ${monthRef} aprovada e liberada com sucesso!`);
       }
     }

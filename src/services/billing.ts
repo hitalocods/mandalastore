@@ -198,7 +198,20 @@ export async function getBillingStatus(): Promise<BillingStatus> {
     }
   }
 
-  const activeBilling = await getOrCreateMonthBilling(dueMonthRef, targetYear, targetMonth, dueDay);
+  let activeBilling = await getOrCreateMonthBilling(dueMonthRef, targetYear, targetMonth, dueDay);
+
+  // Se ainda estiver pendente no banco, tenta sincronizar automaticamente com o AbacatePay
+  if (activeBilling.status !== "paid") {
+    try {
+      const confirmed = await checkAbacatePayPaymentStatus(dueMonthRef);
+      if (confirmed) {
+        activeBilling = await getOrCreateMonthBilling(dueMonthRef, targetYear, targetMonth, dueDay);
+      }
+    } catch {
+      // Silencia erro de rede da API externa para não atrasar o painel
+    }
+  }
+
   const isOverdue = daysOverdue > 0 && activeBilling.status !== "paid";
 
   if (activeBilling.status === "paid") {
@@ -316,39 +329,58 @@ export async function checkAbacatePayPaymentStatus(monthRef: string): Promise<bo
       }
     }
 
-    // Consulta também lista de checkouts
-    const res = await fetch("https://api.abacatepay.com/v2/checkouts/list", {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-
-    if (!res.ok) return false;
-
-    const json = await res.json();
-    const checkouts = json.data || [];
+    // Consulta checkouts na v2 e billings na v1 da AbacatePay
+    const endpoints = [
+      "https://api.abacatepay.com/v2/checkouts/list",
+      "https://api.abacatepay.com/v1/billing/list",
+    ];
 
     interface AbacateCheckout {
       id?: string;
+      url?: string;
       externalId?: string | null;
       status?: string;
       paidAmount?: number | null;
     }
 
-    const matchedCheckout = checkouts.find((c: AbacateCheckout) => {
-      const matchId =
-        (billing.preference_id && c.id === billing.preference_id) ||
-        c.id === ABACATEPAY_BILL_ID;
-      const matchExt = c.externalId === `billing-${monthRef}`;
-      return matchId || matchExt;
-    });
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
 
-    if (
-      matchedCheckout &&
-      (matchedCheckout.status === "PAID" ||
-        (matchedCheckout.paidAmount && matchedCheckout.paidAmount > 0))
-    ) {
-      await markBillingAsPaid(monthRef, matchedCheckout.id, "Cartão/AbacatePay");
-      return true;
+        if (!res.ok) continue;
+
+        const json = await res.json();
+        const checkouts: AbacateCheckout[] = Array.isArray(json.data) ? json.data : [];
+
+        const matchedCheckout = checkouts.find((c: AbacateCheckout) => {
+          const matchId =
+            (billing.preference_id && c.id === billing.preference_id) ||
+            c.id === ABACATEPAY_BILL_ID ||
+            Boolean(c.url && c.url.includes(ABACATEPAY_BILL_ID));
+          const matchExt = c.externalId === `billing-${monthRef}`;
+          return matchId || matchExt;
+        });
+
+        if (
+          matchedCheckout &&
+          (matchedCheckout.status === "PAID" ||
+            matchedCheckout.status === "ACTIVE" ||
+            matchedCheckout.status === "COMPLETED" ||
+            (matchedCheckout.paidAmount && matchedCheckout.paidAmount > 0))
+        ) {
+          await markBillingAsPaid(
+            monthRef,
+            matchedCheckout.id || ABACATEPAY_BILL_ID,
+            "Cartão/AbacatePay"
+          );
+          return true;
+        }
+      } catch {
+        // Tenta o próximo endpoint
+      }
     }
   } catch (error) {
     console.error("Erro ao consultar pagamentos no AbacatePay:", error);
