@@ -13,6 +13,12 @@ type InitialEntranceCardProps = {
     acessorios?: number;
     produtos?: number;
   };
+  topicSubtitles?: {
+    imagens?: string;
+    vestuario?: string;
+    acessorios?: string;
+    produtos?: string;
+  };
   clothingCount?: number;
   artigosCount?: number;
 };
@@ -80,6 +86,7 @@ function CornerFiligree({ className = "" }: { className?: string }) {
 export function InitialEntranceCard({
   onSelectMode,
   topicCounts,
+  topicSubtitles,
   clothingCount,
   artigosCount,
 }: InitialEntranceCardProps) {
@@ -88,6 +95,11 @@ export function InitialEntranceCard({
   const vestuarioCount = topicCounts?.vestuario ?? clothingCount ?? 36;
   const acessoriosCount = topicCounts?.acessorios ?? 0;
   const produtosCount = topicCounts?.produtos ?? artigosCount ?? 363;
+
+  const imagensSubtitle = topicSubtitles?.imagens || "Católicas, Umbanda, batismo e livros";
+  const vestuarioSubtitle = topicSubtitles?.vestuario || "Roupas, guias, chapéus e acessórios";
+  const acessoriosSubtitle = topicSubtitles?.acessorios || "Colares, brincos, chapéus, coroas e mais";
+  const produtosSubtitle = topicSubtitles?.produtos || "Velas, ervas, incensos, rituais e mais";
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-3 sm:p-6 bg-[radial-gradient(ellipse_at_center,var(--red-bright)_0%,var(--red)_55%,var(--red-deep)_100%)] relative overflow-hidden text-[#fff3dc] selection:bg-[var(--gold)] selection:text-black">
@@ -174,7 +186,7 @@ export function InitialEntranceCard({
                     </span>
                   </div>
                   <p className="mt-0.5 text-[11px] sm:text-xs text-[#fff3dc]/80 line-clamp-1 sm:line-clamp-none font-light">
-                    Católicas, Umbanda, batismo e livros
+                    {imagensSubtitle}
                   </p>
                 </div>
               </div>
@@ -206,7 +218,7 @@ export function InitialEntranceCard({
                     </span>
                   </div>
                   <p className="mt-0.5 text-[11px] sm:text-xs text-[#fff3dc]/80 line-clamp-1 sm:line-clamp-none font-light">
-                    Roupas, guias, chapéus e acessórios
+                    {vestuarioSubtitle}
                   </p>
                 </div>
               </div>
@@ -236,7 +248,7 @@ export function InitialEntranceCard({
                     </span>
                   </div>
                   <p className="mt-0.5 text-[11px] sm:text-xs text-[#fff3dc]/80 line-clamp-1 sm:line-clamp-none font-light">
-                    Colares, brincos, chapéus, coroas e mais
+                    {acessoriosSubtitle}
                   </p>
                 </div>
               </div>
@@ -267,7 +279,7 @@ export function InitialEntranceCard({
                     </span>
                   </div>
                   <p className="mt-0.5 text-[11px] sm:text-xs text-[#fff3dc]/80 line-clamp-1 sm:line-clamp-none font-light">
-                    Velas, ervas, incensos, rituais e mais
+                    {produtosSubtitle}
                   </p>
                 </div>
               </div>

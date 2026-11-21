@@ -277,6 +277,73 @@ export function computeTopicCounts(
 }
 
 /**
+ * Monta automaticamente a legenda (subtítulo) do card na tela inicial a partir
+ * das categorias principais vinculadas a ele no painel de admin.
+ */
+export function buildTopicSubtitles(
+  categoriesTree: CategoryWithChildren[] = []
+): Record<CatalogTopicId, string> {
+  const defaults: Record<CatalogTopicId, string> = {
+    imagens: CATALOG_TOPICS.imagens.subtitle,
+    vestuario: CATALOG_TOPICS.vestuario.subtitle,
+    acessorios: CATALOG_TOPICS.acessorios.subtitle,
+    produtos: CATALOG_TOPICS.produtos.subtitle,
+  };
+
+  if (!categoriesTree || categoriesTree.length === 0) {
+    return defaults;
+  }
+
+  const namesByTopic: Record<CatalogTopicId, string[]> = {
+    imagens: [],
+    vestuario: [],
+    acessorios: [],
+    produtos: [],
+  };
+
+  for (const root of categoriesTree) {
+    const t = getCategoryNodeTopic(root);
+    namesByTopic[t].push(root.name.trim());
+  }
+
+  const result: Record<CatalogTopicId, string> = { ...defaults };
+
+  for (const topicId of ["imagens", "vestuario", "acessorios", "produtos"] as CatalogTopicId[]) {
+    const list = namesByTopic[topicId];
+    if (list.length === 0) continue;
+
+    // Se a categoria principal tiver subcategorias (ex: Vestuários -> Feminino, Masculino),
+    // inclui também o nome das subcategorias quando houver poucas categorias principais
+    const displayNames: string[] = [...list];
+    if (list.length <= 2) {
+      for (const root of categoriesTree) {
+        if (getCategoryNodeTopic(root) === topicId && root.children && root.children.length > 0) {
+          for (const sub of root.children) {
+            if (displayNames.length < 4 && !displayNames.includes(sub.name.trim())) {
+              displayNames.push(sub.name.trim());
+            }
+          }
+        }
+      }
+    }
+
+    const maxShow = 4;
+    if (displayNames.length === 1) {
+      result[topicId] = displayNames[0];
+    } else if (displayNames.length <= maxShow) {
+      const head = displayNames.slice(0, -1).join(", ");
+      const last = displayNames[displayNames.length - 1];
+      result[topicId] = `${head} e ${last}`;
+    } else {
+      const shown = displayNames.slice(0, maxShow).join(", ");
+      result[topicId] = `${shown} e mais`;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Filtra produtos de acordo com o modo selecionado ("all", "imagens", "vestuario", "acessorios", "produtos", etc).
  */
 export function filterProductsByTopicMode(

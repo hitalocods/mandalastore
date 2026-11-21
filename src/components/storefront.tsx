@@ -15,6 +15,7 @@ import { CartProvider } from "@/store/cart-store";
 import { categories as defaultCategories } from "@/types/product";
 import {
   type StoreMode,
+  buildTopicSubtitles,
   computeTopicCounts,
   filterProductsByTopicMode,
   filterCategoriesTreeByTopicMode,
@@ -48,10 +49,15 @@ export function Storefront({
     return false;
   });
 
-  // Contagem dinâmica dos 3 tópicos a partir dos produtos reais
+  // Contagem e subtítulos dinâmicos dos 4 tópicos a partir dos produtos e categorias reais
   const topicCounts = useMemo(
     () => computeTopicCounts(products, categoriesTree),
     [products, categoriesTree]
+  );
+
+  const topicSubtitles = useMemo(
+    () => buildTopicSubtitles(categoriesTree),
+    [categoriesTree]
   );
 
   // Produtos e categorias ativos baseados no modo/tópico selecionado
@@ -107,6 +113,7 @@ export function Storefront({
       <InitialEntranceCard
         onSelectMode={handleSelectModeAndEnter}
         topicCounts={topicCounts}
+        topicSubtitles={topicSubtitles}
       />
     );
   }

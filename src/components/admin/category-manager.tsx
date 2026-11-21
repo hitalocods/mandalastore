@@ -35,6 +35,7 @@ import {
 import {
   CATALOG_TOPICS,
   CATALOG_TOPIC_LIST,
+  buildTopicSubtitles,
   computeTopicCounts,
   getCategoryNodeTopic,
   inferTopicByText,
@@ -123,6 +124,11 @@ export function CategoryManager({
   const topicCounts = useMemo(
     () => computeTopicCounts(products, categoriesTree),
     [products, categoriesTree]
+  );
+
+  const topicSubtitles = useMemo(
+    () => buildTopicSubtitles(categoriesTree),
+    [categoriesTree]
   );
 
   // Categorias principais agrupadas por tópico da tela inicial
@@ -544,7 +550,7 @@ export function CategoryManager({
                       </span>
                     </div>
                     <p className="text-[11px] text-amber-100/75 truncate mt-0.5">
-                      {topic.subtitle}
+                      {topicSubtitles[topic.id] || topic.subtitle}
                     </p>
                     <p className="text-[10px] text-amber-300/90 font-semibold mt-1">
                       {assignedCats.length}{" "}
