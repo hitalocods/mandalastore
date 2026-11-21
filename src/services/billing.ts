@@ -329,6 +329,38 @@ export async function checkAbacatePayPaymentStatus(monthRef: string): Promise<bo
       }
     }
 
+    // 0. Tenta consultar diretamente o checkout bill_3SrRcSesbk4Kd0zSh21cGKqL na v2
+    const targetBillId =
+      billing.preference_id && billing.preference_id.startsWith("bill_")
+        ? billing.preference_id
+        : ABACATEPAY_BILL_ID;
+
+    try {
+      const directRes = await fetch(
+        `https://api.abacatepay.com/v2/checkouts/get?id=${targetBillId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }
+      );
+      if (directRes.ok) {
+        const directJson = await directRes.json();
+        const item = directJson.data;
+        if (
+          item &&
+          (item.status === "PAID" ||
+            item.status === "ACTIVE" ||
+            item.status === "COMPLETED" ||
+            (item.paidAmount && item.paidAmount > 0))
+        ) {
+          await markBillingAsPaid(monthRef, item.id || targetBillId, "Cartão/AbacatePay");
+          return true;
+        }
+      }
+    } catch {
+      // Continua para os endpoints de listagem
+    }
+
     // Consulta checkouts na v2 e billings na v1 da AbacatePay
     const endpoints = [
       "https://api.abacatepay.com/v2/checkouts/list",
